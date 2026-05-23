@@ -6,8 +6,8 @@ import type {
   RecipeMatchResult,
 } from '../../types/recipes';
 import {
-  getInventoryItemSearchNames,
-  normalizeIngredientName,
+  createIngredientNormalizer,
+  getInventoryItemSearchNamesWithNormalizer,
 } from '../../lib/recipes/matchRecipes';
 
 export type RecipeDisplayItem = {
@@ -36,17 +36,16 @@ export function getRecipeIdsUsingItem(
   cocktailIngredients: CocktailIngredient[],
   ingredientAliases: IngredientAlias[],
 ) {
-  const itemSearchNames = getInventoryItemSearchNames(item, ingredientAliases);
+  const normalizeIngredientName = createIngredientNormalizer(ingredientAliases);
+  const itemSearchNames = getInventoryItemSearchNamesWithNormalizer(
+    item,
+    normalizeIngredientName,
+  );
 
   return new Set(
     cocktailIngredients
       .filter((ingredient) =>
-        itemSearchNames.has(
-          normalizeIngredientName(
-            ingredient.ingredient_name,
-            ingredientAliases,
-          ),
-        ),
+        itemSearchNames.has(normalizeIngredientName(ingredient.ingredient_name)),
       )
       .map((ingredient) => ingredient.recipe_id),
   );

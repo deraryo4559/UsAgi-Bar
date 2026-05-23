@@ -1,0 +1,2 @@
+[functions.analyze-inventory-image]
+verify_jwt = true

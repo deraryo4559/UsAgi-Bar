@@ -34,24 +34,48 @@ function buildAliasMap(ingredientAliases: IngredientAlias[]) {
   return aliases;
 }
 
+export function createIngredientNormalizer(
+  ingredientAliases: IngredientAlias[] = [],
+) {
+  const aliases = buildAliasMap(ingredientAliases);
+
+  return (value: string) => normalizeIngredientNameWithAliases(value, aliases);
+}
+
+function normalizeIngredientNameWithAliases(
+  value: string,
+  aliases: Map<string, string>,
+) {
+  const normalized = compactNormalize(value);
+  return aliases.get(normalized) ?? normalized;
+}
+
 export function normalizeIngredientName(
   value: string,
   ingredientAliases: IngredientAlias[] = [],
 ) {
-  const normalized = compactNormalize(value);
-  const aliases = buildAliasMap(ingredientAliases);
-  return aliases.get(normalized) ?? normalized;
+  return createIngredientNormalizer(ingredientAliases)(value);
+}
+
+export function getInventoryItemSearchNamesWithNormalizer(
+  item: InventoryItem,
+  normalizeIngredientName: (value: string) => string,
+) {
+  const names = [item.name, item.category, item.sub_category]
+    .filter((value): value is string => Boolean(value))
+    .map(normalizeIngredientName);
+
+  return new Set(names);
 }
 
 export function getInventoryItemSearchNames(
   item: InventoryItem,
   ingredientAliases: IngredientAlias[] = [],
 ) {
-  const names = [item.name, item.category, item.sub_category]
-    .filter((value): value is string => Boolean(value))
-    .map((value) => normalizeIngredientName(value, ingredientAliases));
-
-  return new Set(names);
+  return getInventoryItemSearchNamesWithNormalizer(
+    item,
+    createIngredientNormalizer(ingredientAliases),
+  );
 }
 
 function hasRemaining(item: InventoryItem) {
@@ -85,9 +109,13 @@ export function matchRecipes({
   nearThreshold = 1,
 }: MatchRecipesInput): RecipeMatchResult[] {
   const availableNames = new Set<string>();
+  const normalizeIngredientName = createIngredientNormalizer(ingredientAliases);
 
   inventoryItems.filter(hasRemaining).forEach((item) => {
-    getInventoryItemSearchNames(item, ingredientAliases).forEach((name) => {
+    getInventoryItemSearchNamesWithNormalizer(
+      item,
+      normalizeIngredientName,
+    ).forEach((name) => {
       availableNames.add(name);
     });
   });
@@ -108,12 +136,7 @@ export function matchRecipes({
 
     requiredGroups.forEach((ingredientGroup) => {
       const isSatisfied = ingredientGroup.some((ingredient) =>
-        availableNames.has(
-          normalizeIngredientName(
-            ingredient.ingredient_name,
-            ingredientAliases,
-          ),
-        ),
+        availableNames.has(normalizeIngredientName(ingredient.ingredient_name)),
       );
 
       if (!isSatisfied) {
