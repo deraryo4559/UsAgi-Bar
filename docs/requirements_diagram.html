@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ウサギBar 要件定義 図解</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --border: #e5e2db;
+    --text: #2b2b2b;
+    --muted: #6f6f6f;
+    --accent: #d97a4e;       /* オレンジ系 */
+    --accent-soft: #fff1e8;
+    --supabase: #3ecf8e;
+    --gemini: #4285f4;
+    --pages: #1a1a1a;
+    --warn: #c0392b;
+    --ok: #2e7d32;
+    --near: #c97b00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 24px 16px 96px;
+  }
+  header {
+    max-width: 1100px;
+    margin: 0 auto 32px;
+    padding: 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+  header h1 { margin: 0 0 8px; font-size: 24px; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  header .mascot {
+    display: inline-block;
+    margin-right: 10px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--text);
+    vertical-align: middle;
+    position: relative;
+  }
+  header .mascot::before, header .mascot::after {
+    content: "";
+    position: absolute;
+    width: 8px; height: 18px;
+    background: #fff;
+    border: 2px solid var(--text);
+    border-radius: 6px 6px 4px 4px;
+    top: -16px;
+  }
+  header .mascot::before { left: 4px; transform: rotate(-10deg); }
+  header .mascot::after { right: 4px; transform: rotate(10deg); }
+  header .glasses {
+    position: absolute;
+    width: 22px; height: 6px;
+    background: var(--text);
+    top: 13px; left: 5px;
+    border-radius: 2px;
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  section.card h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    border-left: 6px solid var(--accent);
+    padding-left: 10px;
+  }
+  section.card .desc {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  /* 汎用ボックス */
+  .box {
+    display: inline-block;
+    border: 1.5px solid var(--text);
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 120px;
+  }
+  .box.muted { border-color: var(--border); color: var(--muted); font-weight: 500; }
+  .box.accent { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .box.supabase { border-color: var(--supabase); background: #ecfdf5; color: #056b3f; }
+  .box.gemini { border-color: var(--gemini); background: #eff5ff; color: #1c4ec1; }
+  .box.pages { border-color: var(--pages); background: #f4f4f4; }
+  .box.ok { border-color: var(--ok); background: #e8f5e9; color: var(--ok); }
+  .box.warn { border-color: var(--warn); background: #fdecea; color: var(--warn); }
+  .box.near { border-color: var(--near); background: #fff4e0; color: var(--near); }
+
+  /* 矢印 */
+  .arrow {
+    display: inline-block;
+    color: var(--muted);
+    font-weight: 700;
+    margin: 0 6px;
+    font-size: 16px;
+  }
+  .arrow-v {
+    display: block;
+    color: var(--muted);
+    text-align: center;
+    font-size: 18px;
+    margin: 6px 0;
+  }
+
+  /* 横並びフロー */
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0;
+  }
+  .row.center { justify-content: center; }
+
+  /* グリッド */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 720px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* テーブル（DB） */
+  table.db {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fff;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+  table.db caption {
+    text-align: left;
+    font-weight: 700;
+    padding: 10px 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+  }
+  table.db th, table.db td {
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    text-align: left;
+  }
+  table.db th { background: #faf7f3; font-weight: 600; }
+  table.db td.pk { color: var(--accent); font-weight: 700; }
+  table.db td.fk { color: #1c4ec1; }
+  table.db td.note { color: var(--muted); font-size: 12px; }
+
+  /* ワイヤーフレーム */
+  .wf-frame {
+    border: 2px solid var(--text);
+    border-radius: 18px;
+    padding: 12px;
+    background: #fff;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .wf-title {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .wf-shelf {
+    background: #efe6d8;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #c9b88e;
+  }
+  .wf-shelf-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px 0;
+    border-bottom: 6px solid #a07a4a;
+  }
+  .wf-shelf-row:last-child { border-bottom: 4px solid #6b4a26; border-radius: 0 0 4px 4px; }
+  .wf-bottle {
+    aspect-ratio: 1/1.6;
+    background: linear-gradient(180deg, #ddd 0%, #aaa 100%);
+    border-radius: 4px 4px 2px 2px;
+    border: 1px solid #888;
+    position: relative;
+  }
+  .wf-bottle::before {
+    content: "";
+    position: absolute;
+    top: -6px; left: 35%;
+    width: 30%; height: 8px;
+    background: #777;
+    border-radius: 2px;
+  }
+  .wf-bottle.drink { background: linear-gradient(180deg, #c2e7ff 0%, #6ab1e3 100%); border-color: #4e8bb8; }
+  .wf-bottle.mixer { background: linear-gradient(180deg, #ffe7e7 0%, #d39191 100%); border-color: #a96565; }
+
+  .wf-floating {
+    position: absolute;
+    right: 12px; top: 12px;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    opacity: 0.9;
+  }
+
+  .wf-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .wf-img-area {
+    height: 110px;
+    background: #f0e8da;
+    border: 1px dashed #aaa;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 12px;
+  }
+  .wf-line {
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+  }
+  .wf-line.short { width: 60%; }
+  .wf-bar-bg {
+    height: 10px;
+    background: #f0e8da;
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .wf-bar-bg::after {
+    content: "";
+    position: absolute; top: 0; left: 0; bottom: 0;
+    width: 65%;
+    background: var(--accent);
+    border-radius: 999px;
+  }
+  .wf-section {
+    border-top: 1px dashed var(--border);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+  .wf-section-title {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .wf-recipe-card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .wf-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 999px;
+  }
+  .wf-tag.ok { background: #e8f5e9; color: var(--ok); }
+  .wf-tag.near { background: #fff4e0; color: var(--near); }
+
+  /* ページ遷移ノード */
+  .nav-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    align-items: center;
+    justify-items: center;
+  }
+  .nav-grid .row-arrow {
+    text-align: center;
+    color: var(--muted);
+  }
+  @media (max-width: 720px) {
+    .nav-grid { grid-template-columns: 1fr; }
+  }
+
+  /* 凡例 */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend .swatch {
+    width: 12px; height: 12px;
+    border: 1.5px solid;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  /* リンク用目次 */
+  nav.toc {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 24px;
+    max-width: 1100px;
+    margin: 0 auto 24px;
+  }
+  nav.toc h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+  nav.toc ol { margin: 0; padding-left: 20px; font-size: 14px; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+
+  /* 注意ノート */
+  .note {
+    background: #fff8ec;
+    border-left: 4px solid #e0a85b;
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: #6f5a2a;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🥃 ウサギBar 要件定義 図解</h1>
+  <div class="sub">構造理解のための簡易ワイヤーフレーム・構成図・処理フロー・DB設計図（v0.1 / 2026-05-23）</div>
+</header>
+
+<nav class="toc">
+  <h3>目次</h3>
+  <ol>
+    <li><a href="#arch">全体アーキテクチャ図</a></li>
+    <li><a href="#nav">ページ遷移図</a></li>
+    <li><a href="#wf-main">メイン画面 ワイヤーフレーム</a></li>
+    <li><a href="#wf-detail">詳細画面 ワイヤーフレーム</a></li>
+    <li><a href="#wf-admin">管理者画面 ワイヤーフレーム</a></li>
+    <li><a href="#db">DB設計図</a></li>
+    <li><a href="#flow-alc">お酒登録 処理フロー</a></li>
+    <li><a href="#flow-drink">ドリンク登録 処理フロー</a></li>
+    <li><a href="#match">レシピ照合ロジック図</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- 1. アーキテクチャ -->
+<section class="card" id="arch">
+  <h2>1. 全体アーキテクチャ図</h2>
+  <div class="desc">フロントは GitHub Pages、バックエンド機能はすべて Supabase に寄せる。Gemini は Edge Functions 経由でのみ呼ぶ。</div>
+
+  <div style="text-align:center;">
+    <div class="box pages">👤 ユーザー / 管理者<br><span style="font-weight:400;font-size:11px;color:var(--muted)">ブラウザ</span></div>
+    <div class="arrow-v">⇅ HTTPS</div>
+    <div class="box pages">GitHub Pages<br><span style="font-weight:400;font-size:11px;color:var(--muted)">React + TS + Vite (SPA)</span></div>
+    <div class="arrow-v">⇅</div>
+
+    <div class="grid-3" style="margin-top: 8px;">
+      <div>
+        <div class="box supabase" style="width:100%;">Supabase Auth<br><span style="font-weight:400;font-size:11px;">メール+パスワード</span></div>
+      </div>
+      <div>
+        <div class="box supabase" style="width:100%;">Supabase DB (Postgres)<br><span style="font-weight:400;font-size:11px;">RLS 有効</span></div>
+      </div>
+      <div>
+        <div class="box supabase" style="width:100%;">Supabase Storage<br><span style="font-weight:400;font-size:11px;">画像保存</span></div>
+      </div>
+    </div>
+
+    <div class="arrow-v">⇅ JWT 検証付き</div>
+
+    <div class="box supabase" style="min-width:260px;">Supabase Edge Functions<br><span style="font-weight:400;font-size:11px;">Geminiキーを秘匿</span></div>
+
+    <div class="arrow-v">⇅ サーバー間 API 呼び出し</div>
+
+    <div class="box gemini">Google Gemini API<br><span style="font-weight:400;font-size:11px;">画像解析 / 文章整形</span></div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <strong style="font-size:13px;">論理データ:</strong>
+    <div class="row">
+      <span class="box accent">在庫DB<br><span style="font-weight:400;font-size:11px;">inventory_items</span></span>
+      <span class="arrow">⇄ 照合 ⇄</span>
+      <span class="box accent">カクテルDB<br><span style="font-weight:400;font-size:11px;">cocktail_recipes<br>cocktail_ingredients</span></span>
+      <span class="arrow">→</span>
+      <span class="box ok">recipe_matches<br><span style="font-weight:400;font-size:11px;">判定キャッシュ</span></span>
+    </div>
+    <div class="note">在庫DBとカクテルDBはどちらも Supabase Postgres 内のテーブル。「照合」処理は通常のSQL/TypeScriptで行う（AI不使用）。</div>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch" style="border-color:var(--pages);background:#f4f4f4"></span>クライアント / Pages</span>
+    <span><span class="swatch" style="border-color:var(--supabase);background:#ecfdf5"></span>Supabase</span>
+    <span><span class="swatch" style="border-color:var(--gemini);background:#eff5ff"></span>外部AI</span>
+    <span><span class="swatch" style="border-color:var(--accent);background:var(--accent-soft)"></span>論理データ</span>
+  </div>
+</section>
+
+<!-- 2. ページ遷移 -->
+<section class="card" id="nav">
+  <h2>2. ページ遷移図</h2>
+  <div class="desc">未ログインでも「酒棚」と「詳細」は閲覧可能。書き込み系はすべて管理者ログイン経由。</div>
+
+  <div class="nav-grid">
+    <div></div>
+    <div class="box pages" style="min-width:160px;">メイン画面 (/)<br><span style="font-weight:400;font-size:11px;">酒棚</span></div>
+    <div></div>
+
+    <div class="row-arrow">↙</div>
+    <div class="row-arrow">↓</div>
+    <div class="row-arrow">↘ (管理者のみ)</div>
+
+    <div class="box pages">お酒詳細<br>/items/:id</div>
+    <div class="box pages">ドリンク詳細<br>/items/:id</div>
+    <div class="box accent">管理者ログイン<br>/admin/login</div>
+
+    <div></div>
+    <div></div>
+    <div class="row-arrow">↓ ログイン成功</div>
+
+    <div></div>
+    <div></div>
+    <div class="box accent">管理者ダッシュボード<br>/admin</div>
+
+    <div></div>
+    <div></div>
+    <div class="row-arrow">↙       ↓       ↘</div>
+
+    <div class="box accent">新規登録<br>/admin/items/new</div>
+    <div class="box accent">編集<br>/admin/items/:id/edit</div>
+    <div class="box accent">カクテルDB<br>/admin/recipes</div>
+  </div>
+
+  <div class="note">URL は仮。GitHub Pages のため HashRouter を使う想定（`#/items/:id` など）。</div>
+</section>
+
+<!-- 3. メイン画面 WF -->
+<section class="card" id="wf-main">
+  <h2>3. メイン画面 簡易ワイヤーフレーム</h2>
+  <div class="desc">酒棚だけを表示する。説明文・ナビ・カテゴリタブ等は出さない。管理者ログイン時のみ右上に小さな導線。</div>
+
+  <div class="grid-2">
+    <div>
+      <div class="wf-frame" style="position:relative;">
+        <div class="wf-title">— 酒棚（未ログイン）—</div>
+        <div class="wf-shelf">
+          <div class="wf-shelf-row">
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle"></div>
+          </div>
+          <div class="wf-shelf-row">
+            <div class="wf-bottle drink"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle mixer"></div>
+            <div class="wf-bottle drink"></div>
+          </div>
+          <div class="wf-shelf-row">
+            <div class="wf-bottle mixer"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle drink"></div>
+            <div class="wf-bottle"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="wf-frame" style="position:relative;">
+        <div class="wf-floating">+管理</div>
+        <div class="wf-title">— 酒棚（管理者ログイン中）—</div>
+        <div class="wf-shelf">
+          <div class="wf-shelf-row">
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle"></div>
+          </div>
+          <div class="wf-shelf-row">
+            <div class="wf-bottle drink"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle mixer"></div>
+            <div class="wf-bottle drink"></div>
+          </div>
+          <div class="wf-shelf-row">
+            <div class="wf-bottle mixer"></div>
+            <div class="wf-bottle"></div>
+            <div class="wf-bottle drink"></div>
+            <div class="wf-bottle"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch" style="border-color:#888;background:linear-gradient(180deg,#ddd,#aaa);"></span>お酒</span>
+    <span><span class="swatch" style="border-color:#4e8bb8;background:linear-gradient(180deg,#c2e7ff,#6ab1e3);"></span>ドリンク</span>
+    <span><span class="swatch" style="border-color:#a96565;background:linear-gradient(180deg,#ffe7e7,#d39191);"></span>割材</span>
+  </div>
+</section>
+
+<!-- 4. 詳細画面 WF -->
+<section class="card" id="wf-detail">
+  <h2>4. 詳細画面 簡易ワイヤーフレーム</h2>
+  <div class="desc">画像・基本情報・残量バー・作れるカクテル一覧。不足材料がある near マッチも候補として表示する案。</div>
+
+  <div class="grid-2">
+    <div>
+      <div class="wf-frame">
+        <div class="wf-title">— お酒詳細 —</div>
+        <div class="wf-detail">
+          <div class="wf-img-area">[ボトル画像]</div>
+          <div style="font-weight:700;">タンカレー No.TEN</div>
+          <div style="font-size:12px;color:var(--muted);">ジン / 47.3% / 750ml</div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">残量</div>
+            <div class="wf-bar-bg"></div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">メモ: 香りが華やか</div>
+
+          <div class="wf-section">
+            <div class="wf-section-title">このお酒で作れるカクテル</div>
+            <div class="wf-recipe-card">マティーニ <span class="wf-tag ok">作れる</span></div>
+            <div class="wf-recipe-card">ジントニック <span class="wf-tag ok">作れる</span></div>
+            <div class="wf-recipe-card">ネグローニ <span class="wf-tag near">あとカンパリ</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="wf-frame">
+        <div class="wf-title">— ドリンク詳細 —</div>
+        <div class="wf-detail">
+          <div class="wf-img-area">[ボトル画像]</div>
+          <div style="font-weight:700;">ウィルキンソン トニック</div>
+          <div style="font-size:12px;color:var(--muted);">トニックウォーター / 500ml</div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">残量</div>
+            <div class="wf-bar-bg"></div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">メモ: キリッと辛口</div>
+
+          <div class="wf-section">
+            <div class="wf-section-title">このドリンクで作れるカクテル</div>
+            <div class="wf-recipe-card">ジントニック <span class="wf-tag ok">作れる</span></div>
+            <div class="wf-recipe-card">ウォッカトニック <span class="wf-tag ok">作れる</span></div>
+            <div class="wf-recipe-card">テキーラトニック <span class="wf-tag near">あとテキーラ</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>不足材料表示の案:</strong> near マッチは「あと○○があれば作れる」と1行で表示。MVPでは <code>makeable</code> のみ表示、次フェーズで <code>near</code> を追加。
+  </div>
+</section>
+
+<!-- 5. 管理者画面 WF -->
+<section class="card" id="wf-admin">
+  <h2>5. 管理者画面 簡易ワイヤーフレーム</h2>
+  <div class="desc">登録済みアイテム一覧 / 新規登録 / 画像アップロード / Gemini解析 / 確認・修正 / 保存。</div>
+
+  <div class="grid-2">
+    <div>
+      <div class="wf-frame" style="max-width: 360px;">
+        <div class="wf-title">— 管理者ダッシュボード —</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-weight:700;font-size:14px;">在庫アイテム</div>
+          <div class="box accent" style="padding:4px 10px;font-size:11px;min-width:0;">+ 新規登録</div>
+        </div>
+        <div class="wf-recipe-card">タンカレー No.TEN <span class="wf-tag ok">75%</span></div>
+        <div class="wf-recipe-card">アブソルート <span class="wf-tag near">25%</span></div>
+        <div class="wf-recipe-card">ウィルキンソン トニック <span class="wf-tag ok">90%</span></div>
+        <div class="wf-recipe-card">ライム果汁 <span class="wf-tag near">10%</span></div>
+        <div style="display:flex;gap:6px;font-size:11px;color:var(--muted);margin-top:8px;">
+          <span>[編集]</span><span>[残量更新]</span><span>[削除]</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="wf-frame" style="max-width: 360px;">
+        <div class="wf-title">— 新規登録フォーム —</div>
+        <div class="wf-detail">
+          <div class="wf-img-area">[1] 画像アップロード</div>
+          <div class="box accent" style="font-size:12px;">[2] Gemini で解析</div>
+          <div class="wf-section">
+            <div class="wf-section-title">[3] 候補（編集可）</div>
+            <div style="font-size:12px;">名前: <span style="background:#fff4d6;">タンカレー No.TEN</span></div>
+            <div style="font-size:12px;">種類: <span style="background:#fff4d6;">ジン</span></div>
+            <div style="font-size:12px;">度数: <span style="background:#fff4d6;">47.3%</span></div>
+            <div style="font-size:12px;">容量: <span style="background:#fff4d6;">750ml</span></div>
+            <div style="font-size:12px;">メモ: ____________</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <div class="box muted" style="font-size:12px;flex:1;">キャンセル</div>
+            <div class="box ok" style="font-size:12px;flex:1;">保存</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    Gemini 解析ボタンは<strong>次フェーズ</strong>で有効化。MVPでは [2] をスキップして手入力で進める。
+  </div>
+</section>
+
+<!-- 6. DB設計図 -->
+<section class="card" id="db">
+  <h2>6. DB設計図</h2>
+  <div class="desc">Supabase Postgres のテーブル案。PK = 主キー、FK = 外部キー。</div>
+
+  <div class="grid-2">
+    <table class="db">
+      <caption>inventory_items（在庫アイテム）</caption>
+      <tr><th>カラム</th><th>型</th><th>説明</th></tr>
+      <tr><td class="pk">id</td><td>uuid</td><td>主キー</td></tr>
+      <tr><td>name</td><td>text</td><td>商品名</td></tr>
+      <tr><td>item_type</td><td>text</td><td>alcohol / drink / mixer</td></tr>
+      <tr><td>category</td><td>text</td><td>大分類（ジン、ウイスキー等）</td></tr>
+      <tr><td>sub_category</td><td>text</td><td>小分類（ドライジン等）</td></tr>
+      <tr><td>alcohol_percentage</td><td>numeric</td><td>度数（%）。drink/mixer は NULL 可</td></tr>
+      <tr><td>volume_ml</td><td>integer</td><td>容量</td></tr>
+      <tr><td>remaining_ml</td><td>integer</td><td>残量</td></tr>
+      <tr><td>image_url</td><td>text</td><td>Storage の URL</td></tr>
+      <tr><td>memo</td><td>text</td><td>メモ</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>作成日時</td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>更新日時</td></tr>
+    </table>
+
+    <table class="db">
+      <caption>cocktail_recipes（レシピマスター）</caption>
+      <tr><th>カラム</th><th>型</th><th>説明</th></tr>
+      <tr><td class="pk">id</td><td>uuid</td><td>主キー</td></tr>
+      <tr><td>name</td><td>text</td><td>カクテル名</td></tr>
+      <tr><td>description</td><td>text</td><td>説明</td></tr>
+      <tr><td>method</td><td>text</td><td>作り方（ステア/シェイク等）</td></tr>
+      <tr><td>glass_type</td><td>text</td><td>グラスの種類</td></tr>
+      <tr><td>garnish</td><td>text</td><td>飾り</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>作成日時</td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>更新日時</td></tr>
+    </table>
+
+    <table class="db">
+      <caption>cocktail_ingredients（レシピ材料）</caption>
+      <tr><th>カラム</th><th>型</th><th>説明</th></tr>
+      <tr><td class="pk">id</td><td>uuid</td><td>主キー</td></tr>
+      <tr><td class="fk">recipe_id</td><td>uuid</td><td>FK → cocktail_recipes.id</td></tr>
+      <tr><td>ingredient_name</td><td>text</td><td>材料名</td></tr>
+      <tr><td>ingredient_type</td><td>text</td><td>alcohol / drink / mixer / garnish</td></tr>
+      <tr><td>amount</td><td>numeric</td><td>分量</td></tr>
+      <tr><td>unit</td><td>text</td><td>ml / oz / dash / tsp</td></tr>
+      <tr><td>is_required</td><td>boolean</td><td>必須か任意か</td></tr>
+      <tr><td>substitute_group</td><td>text</td><td>代替グループキー</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>作成日時</td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>更新日時</td></tr>
+    </table>
+
+    <table class="db">
+      <caption>recipe_matches（照合結果キャッシュ）</caption>
+      <tr><th>カラム</th><th>型</th><th>説明</th></tr>
+      <tr><td class="pk">id</td><td>uuid</td><td>主キー</td></tr>
+      <tr><td class="fk">inventory_item_id</td><td>uuid</td><td>FK → inventory_items.id</td></tr>
+      <tr><td class="fk">recipe_id</td><td>uuid</td><td>FK → cocktail_recipes.id</td></tr>
+      <tr><td>match_status</td><td>text</td><td>makeable / near / not_makeable</td></tr>
+      <tr><td>missing_ingredients</td><td>jsonb</td><td>不足材料の配列</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>作成日時</td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>更新日時</td></tr>
+    </table>
+
+    <table class="db">
+      <caption>profiles（ユーザー追加情報）</caption>
+      <tr><th>カラム</th><th>型</th><th>説明</th></tr>
+      <tr><td class="pk">id</td><td>uuid</td><td>主キー</td></tr>
+      <tr><td class="fk">user_id</td><td>uuid</td><td>FK → auth.users.id</td></tr>
+      <tr><td>role</td><td>text</td><td>admin / viewer</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>作成日時</td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>更新日時</td></tr>
+    </table>
+
+    <table class="db">
+      <caption>ingredient_aliases（表記ゆれ辞書・任意）</caption>
+      <tr><th>カラム</th><th>型</th><th>説明</th></tr>
+      <tr><td class="pk">id</td><td>uuid</td><td>主キー</td></tr>
+      <tr><td>canonical_name</td><td>text</td><td>正式名（例: ジン）</td></tr>
+      <tr><td>alias</td><td>text</td><td>別名（例: ドライジン）</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>作成日時</td></tr>
+      <tr><td class="note" colspan="3">canonical_name と alias の組で UNIQUE 制約推奨</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    リレーション: <code>cocktail_recipes (1) ─ (N) cocktail_ingredients</code> / <code>inventory_items (1) ─ (N) recipe_matches (N) ─ (1) cocktail_recipes</code>
+  </div>
+</section>
+
+<!-- 7. お酒登録フロー -->
+<section class="card" id="flow-alc">
+  <h2>7. お酒 登録処理フロー</h2>
+  <div class="desc">写真登録 → Gemini解析 → 候補確認 → DB保存 → レシピ照合 → 酒棚反映。MVPでは [2][3] をスキップ。</div>
+
+  <div class="row">
+    <span class="box">1. 管理者が画像選択</span>
+    <span class="arrow">→</span>
+    <span class="box supabase">2. Storage 保存</span>
+    <span class="arrow">→</span>
+    <span class="box gemini">3. Edge Func → Gemini<br><span style="font-weight:400;font-size:11px;">候補抽出</span></span>
+    <span class="arrow">→</span>
+    <span class="box accent">4. 候補返却<br><span style="font-weight:400;font-size:11px;">名前/種類/度数/容量</span></span>
+  </div>
+  <div class="arrow-v">↓</div>
+  <div class="row">
+    <span class="box">5. 管理者が確認・修正</span>
+    <span class="arrow">→</span>
+    <span class="box supabase">6. inventory_items に保存</span>
+    <span class="arrow">→</span>
+    <span class="box ok">7. recipe_matches 再計算</span>
+    <span class="arrow">→</span>
+    <span class="box ok">8. 酒棚に反映</span>
+  </div>
+
+  <div class="note">
+    <strong>MVP の場合</strong>: [1] → [5]手入力フォーム → [6] → [7] → [8] と直線的に進む。Gemini 連携は次フェーズで [2][3][4] を挿入する。
+  </div>
+</section>
+
+<!-- 8. ドリンク登録フロー -->
+<section class="card" id="flow-drink">
+  <h2>8. ドリンク / 割材 登録処理フロー</h2>
+  <div class="desc">お酒とほぼ同じ。違いは「度数なし」と「ingredient_type が drink / mixer」。</div>
+
+  <div class="row">
+    <span class="box">1. 管理者が画像選択</span>
+    <span class="arrow">→</span>
+    <span class="box supabase">2. Storage 保存</span>
+    <span class="arrow">→</span>
+    <span class="box gemini">3. Edge Func → Gemini<br><span style="font-weight:400;font-size:11px;">名前/種類/容量を抽出</span></span>
+    <span class="arrow">→</span>
+    <span class="box accent">4. 候補返却</span>
+  </div>
+  <div class="arrow-v">↓</div>
+  <div class="row">
+    <span class="box">5. 管理者が確認・修正<br><span style="font-weight:400;font-size:11px;">item_type を drink/mixer 選択</span></span>
+    <span class="arrow">→</span>
+    <span class="box supabase">6. inventory_items に保存</span>
+    <span class="arrow">→</span>
+    <span class="box ok">7. recipe_matches 再計算</span>
+    <span class="arrow">→</span>
+    <span class="box ok">8. 酒棚に反映</span>
+  </div>
+
+  <div class="note">
+    お酒との差分は「alcohol_percentage を入れない」「サムネ色を分ける」「detail 画面のセクション名を出し分ける」のみ。
+  </div>
+</section>
+
+<!-- 9. 照合ロジック -->
+<section class="card" id="match">
+  <h2>9. レシピ照合ロジック図</h2>
+  <div class="desc">在庫DB × カクテルDB を、表記ゆれ辞書経由で正規化して比較する。判定は makeable / near / not_makeable の3値。</div>
+
+  <div style="text-align:center;">
+    <div class="grid-3">
+      <div class="box accent">在庫DB<br>inventory_items</div>
+      <div class="box muted">↔ 表記ゆれ辞書<br>ingredient_aliases</div>
+      <div class="box accent">カクテルDB<br>cocktail_ingredients</div>
+    </div>
+    <div class="arrow-v">↓ 正規化して名前マッチ</div>
+    <div class="box" style="min-width:280px;">必須/任意 + 代替グループを考慮し<br>不足材料を集計</div>
+    <div class="arrow-v">↓ 判定</div>
+
+    <div class="grid-3" style="margin-top:6px;">
+      <div class="box ok">作れる<br><span style="font-weight:400;font-size:11px;">必須材料すべて在庫あり</span></div>
+      <div class="box near">あと一歩 (near)<br><span style="font-weight:400;font-size:11px;">不足が1〜N個（次フェーズ）</span></div>
+      <div class="box warn">作れない<br><span style="font-weight:400;font-size:11px;">不足多数</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <strong style="font-size:13px;">判定アルゴリズム概要（疑似コード）:</strong>
+    <pre style="background:#f7f4ee;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;overflow-x:auto;line-height:1.5;">for each recipe in cocktail_recipes:
+  required = recipe.ingredients.filter(i => i.is_required)
+  missing = []
+  for each ing in required:
+    inStock =
+      inventory.find(item => normalize(item) == normalize(ing.name))
+      || inventory.find(item => sameSubstituteGroup(item, ing))
+    if not inStock:
+      missing.push(ing.name)
+
+  if missing.length == 0:    status = "makeable"
+  elif missing.length &lt;= 2: status = "near"        // 閾値は未決定 (U6)
+  else:                      status = "not_makeable"
+
+  recipe_matches.upsert({recipe_id, status, missing})</pre>
+  </div>
+
+  <div class="note">
+    判定は <strong>通常のプログラム処理（純TS or SQL）</strong> で行う。Gemini は「normalize() が確信を持てない曖昧ケース」のみ補助判定に使う（次フェーズ）。
+  </div>
+</section>
+
+</main>
+
+</body>
+</html>
