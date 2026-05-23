@@ -5,10 +5,13 @@ import tanaUsagiUrl from '../../img/tanaUsagi.png';
 import type { InventoryItem } from '../../types/inventory';
 import {
   DESKTOP_ITEMS_PER_ROW,
+  getItemXPositions,
+  getShelfRowHeight,
   MOBILE_ITEMS_PER_ROW,
   SHELF_ASPECT_RATIO,
   SHELF_LABEL_BAND_HEIGHT,
   SHELF_ROWS,
+  SHOW_SHELF_DEBUG,
   type ShelfRowLayout,
 } from './shelfLayout';
 
@@ -18,10 +21,10 @@ type ShelfItemSize = {
 };
 
 const defaultItemSizes: Record<InventoryItem['item_type'], ShelfItemSize> = {
-  alcohol: { heightScale: 1, widthPct: 72 },
-  drink: { heightScale: 0.9, widthPct: 82 },
-  mixer: { heightScale: 0.86, widthPct: 80 },
-  other: { heightScale: 0.86, widthPct: 78 },
+  alcohol: { heightScale: 1, widthPct: 70 },
+  drink: { heightScale: 0.9, widthPct: 80 },
+  mixer: { heightScale: 0.88, widthPct: 78 },
+  other: { heightScale: 0.88, widthPct: 76 },
 };
 
 function chunkItems(items: InventoryItem[], itemsPerRow: number) {
@@ -53,11 +56,11 @@ function remainingPercent(item: InventoryItem) {
 }
 
 function remainingTone(percent: number | null) {
-  if (percent === null) return 'bg-cream-300';
-  if (percent <= 0) return 'bg-rose-300';
-  if (percent <= 25) return 'bg-usagi-orange';
-  if (percent <= 60) return 'bg-amber-400';
-  return 'bg-usagi-mint';
+  if (percent === null) return 'bg-cream-300/60';
+  if (percent <= 0) return 'bg-night-neon';
+  if (percent <= 25) return 'bg-night-orange';
+  if (percent <= 60) return 'bg-night-gold';
+  return 'bg-night-mint';
 }
 
 function normalizeText(value: string | null) {
@@ -75,15 +78,15 @@ function getShelfItemSize(item: InventoryItem): ShelfItemSize {
     .join(' ');
 
   if (/ビール|beer|缶/.test(searchableText)) {
-    return { heightScale: 0.8, widthPct: 68 };
+    return { heightScale: 0.82, widthPct: 68 };
   }
 
   if (/牛乳|milk|オレンジジュース|ジュース|コーラ|cola/.test(searchableText)) {
-    return { heightScale: 0.84, widthPct: 86 };
+    return { heightScale: 0.86, widthPct: 84 };
   }
 
   if (/トニック|ソーダ|炭酸|ジンジャーエール/.test(searchableText)) {
-    return { heightScale: 0.86, widthPct: 78 };
+    return { heightScale: 0.88, widthPct: 76 };
   }
 
   return size;
@@ -99,11 +102,12 @@ function ShelfItem({
   const percent = remainingPercent(item);
   const size = getShelfItemSize(item);
   const rowBandHeight = layout.labelY - layout.topY + SHELF_LABEL_BAND_HEIGHT;
+  const rowHeight = getShelfRowHeight(layout);
   const itemStagePct = ((layout.floorY - layout.topY) / rowBandHeight) * 100;
   const labelTopPct = ((layout.labelY - layout.topY) / rowBandHeight) * 100;
   const itemHeightPct = Math.min(
-    96,
-    Math.max(62, layout.itemHeight * size.heightScale),
+    94,
+    Math.max(58, ((layout.itemHeight * size.heightScale) / rowHeight) * 100),
   );
 
   return (
@@ -125,14 +129,14 @@ function ShelfItem({
         >
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute bottom-[-2px] left-1/2 h-[5px] w-[72%] -translate-x-1/2 rounded-full bg-black/35 blur-[3px]"
+            className="pointer-events-none absolute bottom-[-2px] left-1/2 h-[6px] w-[76%] -translate-x-1/2 rounded-full bg-black/55 blur-[3px]"
           />
 
           {item.image_url ? (
             <img
               src={item.image_url}
               alt={item.name}
-              className="shelf-product-image relative z-10 h-full w-full select-none object-contain object-bottom drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] transition-transform duration-150 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5"
+              className="shelf-product-image relative z-10 h-full w-full select-none object-contain object-bottom drop-shadow-[0_8px_8px_rgba(0,0,0,0.62)] transition-transform duration-150 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5"
               draggable={false}
             />
           ) : (
@@ -147,13 +151,13 @@ function ShelfItem({
         className="absolute left-1/2 z-20 flex w-[94%] -translate-x-1/2 flex-col items-center gap-[2px]"
         style={{ top: `${labelTopPct}%` }}
       >
-        <span className="max-w-full truncate rounded-full border border-woody-600/30 bg-cream-50/88 px-1.5 py-[1px] text-center text-[7px] font-bold leading-tight text-woody-700 shadow-[0_1px_2px_rgba(70,38,15,0.32)] backdrop-blur-[1px] sm:text-[8px]">
+        <span className="max-w-full truncate rounded-full border border-night-gold/40 bg-night-deep/80 px-1.5 py-[1px] text-center text-[7px] font-bold leading-tight text-cream-50 shadow-[0_0_10px_rgba(255,198,121,0.18)] backdrop-blur-[2px] sm:text-[8px]">
           {item.name}
         </span>
         {percent !== null ? (
           <div className="flex w-[66%] min-w-8 items-center gap-[2px]">
             <div
-              className="h-[3px] flex-1 overflow-hidden rounded-full bg-cream-50/45 ring-1 ring-woody-600/20"
+              className="h-[3px] flex-1 overflow-hidden rounded-full bg-black/55 ring-1 ring-night-gold/25"
               aria-hidden="true"
             >
               <div
@@ -161,7 +165,7 @@ function ShelfItem({
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <span className="hidden rounded-full bg-night-deep/65 px-1 text-[7px] font-bold leading-3 text-cream-50/95 sm:inline">
+            <span className="hidden rounded-full border border-night-gold/25 bg-black/55 px-1 text-[7px] font-bold leading-3 text-cream-50/95 sm:inline">
               {percent}%
             </span>
           </div>
@@ -185,28 +189,77 @@ function ShelfRow({
   }
 
   const rowBandHeight = layout.labelY - layout.topY + SHELF_LABEL_BAND_HEIGHT;
+  const slotCount = Math.min(cols, Math.max(items.length, 1));
+  const positions = getItemXPositions(layout, slotCount);
+  const slotWidth = (layout.rightX - layout.leftX) / cols;
 
   return (
     <div
-      className="absolute z-10"
+      className="absolute inset-x-0 z-10"
       style={{
-        left: `${layout.leftX}%`,
-        right: `${layout.rightX}%`,
         top: `${layout.topY}%`,
         height: `${rowBandHeight}%`,
       }}
     >
-      <div
-        className="grid h-full"
-        style={{
-          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          columnGap: 'clamp(3px, 1.1vw, 10px)',
-        }}
-      >
-        {items.map((item) => (
-          <ShelfItem key={item.id} item={item} layout={layout} />
-        ))}
-      </div>
+      {items.map((item, index) => (
+        <div
+          key={item.id}
+          className="absolute top-0 h-full"
+          style={{
+            left: `${positions[index] - slotWidth / 2}%`,
+            width: `${slotWidth}%`,
+          }}
+        >
+          <ShelfItem item={item} layout={layout} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ShelfDebugOverlay() {
+  if (!SHOW_SHELF_DEBUG) {
+    return null;
+  }
+
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-50">
+      {SHELF_ROWS.map((row) => (
+        <div key={row.id}>
+          <div
+            className="absolute inset-x-0 border-t border-sky-300/90 text-[8px]"
+            style={{ top: `${row.topY}%` }}
+          >
+            <span className="ml-1 bg-sky-950/85 px-1 text-sky-100">
+              row {row.id} topY
+            </span>
+          </div>
+          <div
+            className="absolute inset-x-0 border-t border-emerald-300/90 text-[8px]"
+            style={{ top: `${row.floorY}%` }}
+          >
+            <span className="ml-1 bg-emerald-950/85 px-1 text-emerald-100">
+              floorY
+            </span>
+          </div>
+          <div
+            className="absolute inset-x-0 border-t border-pink-300/90 text-[8px]"
+            style={{ top: `${row.labelY}%` }}
+          >
+            <span className="ml-1 bg-pink-950/85 px-1 text-pink-100">
+              labelY / itemHeight {row.itemHeight}
+            </span>
+          </div>
+          <div
+            className="absolute top-0 h-full border-l border-amber-300/90"
+            style={{ left: `${row.leftX}%` }}
+          />
+          <div
+            className="absolute top-0 h-full border-l border-amber-300/90"
+            style={{ left: `${row.rightX}%` }}
+          />
+        </div>
+      ))}
     </div>
   );
 }
@@ -232,26 +285,40 @@ export function ShelfGrid({ items }: ShelfGridProps) {
 
   return (
     <section aria-label="酒棚" className="relative w-full">
-      <div className="relative mx-auto w-[min(94vw,430px)] sm:w-[min(100%,560px)] lg:w-[min(100%,620px)]">
+      <div className="relative mx-auto w-[min(94vw,440px)] sm:w-[min(100%,580px)] lg:w-[min(100%,650px)]">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-[8%] bottom-[-3%] h-[9%] rounded-[50%] bg-woody-700/35 blur-2xl"
+          className="pointer-events-none absolute inset-x-[-16%] top-[1%] h-[24%] rounded-[50%] bg-night-glow/25 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-[18%] top-[3%] h-[20%] rounded-[50%] bg-night-neon/15 blur-2xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-[7%] bottom-[-2%] h-[9%] rounded-[50%] bg-black/70 blur-2xl"
         />
 
         <div
-          className="relative w-full overflow-visible"
+          className="relative w-full overflow-visible rounded-[2rem]"
           style={{ aspectRatio: SHELF_ASPECT_RATIO }}
         >
           <img
             src={shelfUrl}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-0 h-full w-full select-none object-contain drop-shadow-[0_16px_26px_rgba(90,50,20,0.26)]"
+            className="pointer-events-none absolute inset-0 z-0 h-full w-full select-none object-contain drop-shadow-[0_24px_34px_rgba(0,0,0,0.72)]"
             draggable={false}
           />
 
-          <div className="pointer-events-none absolute left-[15%] top-[3.9%] z-20 rounded-full border border-woody-600/35 bg-cream-50/85 px-3 py-1 text-[11px] font-extrabold text-woody-700 shadow-chip backdrop-blur-[2px] sm:text-xs">
-            ウサギBar
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-[13%] top-[4.5%] z-[1] h-[16%] rounded-[50%] bg-night-glow/20 blur-2xl"
+          />
+
+          <div className="pointer-events-none absolute left-[15%] top-[3.9%] z-20 rounded-full border border-night-gold/45 bg-black/45 px-3 py-1 text-[11px] font-extrabold text-cream-50 shadow-neon backdrop-blur-[2px] sm:text-xs">
+            <span className="text-night-glow">ウサギ</span>
+            <span className="ml-0.5 text-night-neon">Bar</span>
           </div>
 
           <div className="absolute inset-0 hidden sm:block">
@@ -275,12 +342,14 @@ export function ShelfGrid({ items }: ShelfGridProps) {
               />
             ))}
           </div>
+
+          <ShelfDebugOverlay />
         </div>
 
         <img
           src={tanaUsagiUrl}
           alt="うさぎ店主"
-          className="pointer-events-none absolute right-[3%] top-[8.2%] z-30 w-[18%] max-w-[104px] select-none object-contain drop-shadow-[0_7px_7px_rgba(70,38,15,0.32)] sm:right-[4%] sm:w-[15%]"
+          className="pointer-events-none absolute right-[4%] top-[8.2%] z-30 w-[17%] max-w-[104px] select-none object-contain drop-shadow-[0_10px_12px_rgba(0,0,0,0.62)] sm:right-[5%] sm:w-[14%]"
           draggable={false}
         />
       </div>

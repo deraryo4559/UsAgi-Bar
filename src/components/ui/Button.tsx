@@ -9,15 +9,15 @@ type ButtonProps = PropsWithChildren<
 
 const variantClasses = {
   primary:
-    'border-usagi-ink bg-usagi-ink text-cream-50 hover:bg-usagi-ink/90 shadow-soft',
+    'border-night-gold bg-night-gold text-night-deep hover:bg-night-glow shadow-neon',
   secondary:
-    'border-cream-300 bg-white text-usagi-ink hover:bg-cream-50 shadow-chip',
+    'border-night-gold/45 bg-night-warm/80 text-cream-50 hover:border-night-glow hover:bg-night-accent shadow-chip',
   danger:
-    'border-rose-700 bg-rose-700 text-white hover:bg-rose-600 shadow-soft',
+    'border-rose-500 bg-rose-700 text-white hover:bg-rose-600 shadow-soft',
   ghost:
-    'border-transparent bg-transparent text-usagi-ink/80 hover:bg-cream-100',
+    'border-transparent bg-transparent text-cream-100/80 hover:bg-white/10',
   accent:
-    'border-usagi-orange bg-usagi-orange text-white hover:bg-usagi-orange/90 shadow-soft',
+    'border-night-neon bg-night-neon text-white hover:bg-night-neon/90 shadow-neon',
 } as const;
 
 const sizeClasses = {

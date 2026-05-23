@@ -8,9 +8,9 @@ type CardProps = PropsWithChildren<
 >;
 
 const toneClasses = {
-  default: 'bg-white border-cream-200',
-  cream: 'bg-cream-50 border-cream-200',
-  sub: 'bg-cream-100 border-cream-200',
+  default: 'bg-night-ink/90 border-night-gold/30 text-cream-50',
+  cream: 'bg-night-warm/90 border-night-gold/30 text-cream-50',
+  sub: 'bg-black/35 border-night-gold/25 text-cream-50',
 } as const;
 
 export function Card({
@@ -22,7 +22,7 @@ export function Card({
 }: CardProps) {
   return (
     <div
-      className={`rounded-2xl border ${toneClasses[tone]} shadow-soft ${
+      className={`rounded-2xl border ${toneClasses[tone]} shadow-bar backdrop-blur ${
         padded ? 'p-4 sm:p-5' : ''
       } ${className}`}
       {...rest}

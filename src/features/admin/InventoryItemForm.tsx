@@ -33,7 +33,7 @@ const fieldLabels: Record<string, string> = {
 };
 
 const inputClass =
-  'rounded-xl border border-cream-300 bg-white px-3 py-2 text-sm font-normal text-usagi-ink shadow-chip focus:border-usagi-orange focus:outline-none focus:ring-2 focus:ring-usagi-orange/30';
+  'rounded-xl border border-night-gold/30 bg-black/35 px-3 py-2 text-sm font-normal text-cream-50 shadow-chip placeholder:text-cream-200/35 focus:border-night-neon focus:outline-none focus:ring-2 focus:ring-night-neon/25';
 
 type InventoryItemFormProps = {
   values: InventoryItemFormValues;
@@ -107,15 +107,15 @@ export function InventoryItemForm({
     <Card>
       <form onSubmit={handleSubmit} className="grid gap-5">
         {/* Step 1-2: 画像アップロード + AI候補作成 */}
-        <section className="grid gap-3 rounded-xl border border-cream-200 bg-cream-50 p-4">
+        <section className="grid gap-3 rounded-xl border border-night-gold/30 bg-night-warm/60 p-4">
           <header className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-bold text-usagi-ink">
-              <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-usagi-orange text-[10px] text-white">
+            <h3 className="text-sm font-bold text-cream-50">
+              <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-night-gold text-[10px] text-night-deep">
                 1
               </span>
               画像アップロード
             </h3>
-            <span className="text-[11px] text-usagi-ink/60">
+            <span className="text-[11px] text-cream-200/60">
               jpg / png / webp / 2MB以下
             </span>
           </header>
@@ -123,7 +123,7 @@ export function InventoryItemForm({
             画像ファイル
             <input
               accept="image/jpeg,image/png,image/webp"
-              className={`${inputClass} file:mr-3 file:rounded-full file:border-0 file:bg-usagi-ink file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cream-50 hover:file:bg-usagi-ink/90`}
+              className={`${inputClass} file:mr-3 file:rounded-full file:border-0 file:bg-night-gold file:px-3 file:py-1 file:text-xs file:font-semibold file:text-night-deep hover:file:bg-night-glow`}
               type="file"
               onChange={handleFileChange}
             />
@@ -138,20 +138,20 @@ export function InventoryItemForm({
               {isUploadingImage ? 'アップロード中…' : '画像をStorageへ保存'}
             </Button>
             {imageFile ? (
-              <span className="text-xs text-usagi-ink/60">
+              <span className="text-xs text-cream-200/60">
                 {imageFile.name} / {Math.round(imageFile.size / 1024)}KB
               </span>
             ) : null}
           </div>
           {values.image_url ? (
-            <div className="flex items-end gap-3 rounded-xl bg-white p-3 ring-1 ring-cream-200">
+            <div className="flex items-end gap-3 rounded-xl bg-black/30 p-3 ring-1 ring-night-gold/25">
               <img
                 className="max-h-32 w-fit rounded-lg object-contain"
                 src={values.image_url}
                 alt="登録画像プレビュー"
                 draggable={false}
               />
-              <span className="text-[11px] text-usagi-ink/60">
+              <span className="text-[11px] text-cream-200/60">
                 {imagePath ?? '画像URL設定済み'}
               </span>
             </div>
@@ -173,13 +173,13 @@ export function InventoryItemForm({
         {/* Step 5-6: フォーム入力 */}
         <section className="grid gap-4">
           <header className="flex items-center gap-2">
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-usagi-orange text-[10px] font-bold text-white">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-night-gold text-[10px] font-bold text-night-deep">
               5
             </span>
-            <h3 className="text-sm font-bold text-usagi-ink">
+            <h3 className="text-sm font-bold text-cream-50">
               内容を確認・修正
             </h3>
-            <span className="text-[11px] text-usagi-ink/60">
+            <span className="text-[11px] text-cream-200/60">
               （保存前に必ず確認してください）
             </span>
           </header>
@@ -284,7 +284,7 @@ export function InventoryItemForm({
           </div>
 
           <div>
-            <div className="mb-1 text-xs font-semibold text-usagi-ink/70">
+            <div className="mb-1 text-xs font-semibold text-cream-200/70">
               残量プリセット
             </div>
             <div className="flex flex-wrap gap-2">
@@ -322,7 +322,7 @@ export function InventoryItemForm({
           </label>
         </section>
 
-        <div className="flex flex-wrap justify-end gap-2 border-t border-cream-200 pt-4">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-night-gold/25 pt-4">
           <Button type="button" variant="ghost" onClick={onCancel}>
             キャンセル
           </Button>

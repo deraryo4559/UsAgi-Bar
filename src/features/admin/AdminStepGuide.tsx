@@ -22,12 +22,12 @@ export function AdminStepGuide() {
           {STEPS.map((step) => (
             <li
               key={step.n}
-              className="flex items-center gap-2 rounded-xl border border-cream-200 bg-white px-2 py-2 shadow-chip"
+              className="flex items-center gap-2 rounded-xl border border-night-gold/25 bg-black/30 px-2 py-2 shadow-chip"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-usagi-orange text-[11px] font-bold text-white">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-night-gold text-[11px] font-bold text-night-deep">
                 {step.n}
               </span>
-              <span className="font-semibold text-usagi-ink">{step.label}</span>
+              <span className="font-semibold text-cream-50">{step.label}</span>
             </li>
           ))}
         </ol>

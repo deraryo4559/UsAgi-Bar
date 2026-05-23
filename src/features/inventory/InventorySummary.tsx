@@ -33,18 +33,18 @@ export function InventorySummary({ item }: InventorySummaryProps) {
   return (
     <Card className="overflow-hidden">
       <div className="grid gap-5 sm:grid-cols-[240px_1fr]">
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-cream-50 ring-1 ring-cream-200">
+        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-black/35 ring-1 ring-night-gold/30">
           {item.image_url ? (
             <img
               src={item.image_url}
               alt={item.name}
-              className="max-h-full max-w-full object-contain"
+              className="max-h-full max-w-full object-contain drop-shadow-[0_14px_18px_rgba(0,0,0,0.58)]"
               draggable={false}
             />
           ) : (
             <div className="flex h-full w-full max-w-[60%] flex-col items-center justify-end pb-3">
               <BottlePlaceholder itemType={item.item_type} />
-              <span className="mt-2 text-[11px] text-usagi-ink/50">画像なし</span>
+              <span className="mt-2 text-[11px] text-cream-200/50">画像なし</span>
             </div>
           )}
         </div>
@@ -66,21 +66,21 @@ export function InventorySummary({ item }: InventorySummaryProps) {
                 </Badge>
               ) : null}
             </div>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-cream-50">
               {item.name}
             </h2>
           </div>
 
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-xs text-usagi-ink/60">度数</dt>
-              <dd className="font-semibold">
+              <dt className="text-xs text-cream-200/60">度数</dt>
+              <dd className="font-semibold text-cream-50">
                 {formatNumber(item.alcohol_percentage, '%')}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-usagi-ink/60">容量</dt>
-              <dd className="font-semibold">
+              <dt className="text-xs text-cream-200/60">容量</dt>
+              <dd className="font-semibold text-cream-50">
                 {formatNumber(item.volume_ml, 'ml')}
               </dd>
             </div>
@@ -93,7 +93,7 @@ export function InventorySummary({ item }: InventorySummaryProps) {
           </dl>
 
           {item.memo ? (
-            <p className="rounded-xl bg-cream-50 px-3 py-2 text-sm text-usagi-ink/80 ring-1 ring-cream-200">
+            <p className="rounded-xl bg-black/30 px-3 py-2 text-sm text-cream-100/80 ring-1 ring-night-gold/25">
               {item.memo}
             </p>
           ) : null}

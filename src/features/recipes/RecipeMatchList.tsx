@@ -39,15 +39,15 @@ function RecipeCard({
     <article
       className={`rounded-2xl border ${
         isNear
-          ? 'border-usagi-pink bg-usagi-pinkSoft/50'
-          : 'border-usagi-mint bg-usagi-mintSoft/60'
-      } p-4 shadow-soft`}
+          ? 'border-night-orange/45 bg-night-orange/10'
+          : 'border-night-mint/45 bg-night-mint/10'
+      } p-4 text-cream-50 shadow-bar`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-base font-bold text-usagi-ink">{recipe.name}</h3>
+          <h3 className="text-base font-bold text-cream-50">{recipe.name}</h3>
           {usesTargetItem ? (
-            <p className="mt-0.5 text-[11px] font-medium text-usagi-ink/60">
+            <p className="mt-0.5 text-[11px] font-medium text-cream-200/60">
               このアイテムを使うレシピ
             </p>
           ) : null}
@@ -58,12 +58,12 @@ function RecipeCard({
       </div>
 
       {recipe.description ? (
-        <p className="mt-2 text-sm text-usagi-ink/80">{recipe.description}</p>
+        <p className="mt-2 text-sm text-cream-100/80">{recipe.description}</p>
       ) : null}
 
       {isNear && match.missingIngredients.length ? (
-        <div className="mt-3 rounded-xl border border-usagi-pink/60 bg-white/70 px-3 py-2 text-sm text-rose-900">
-          <span className="mr-1 text-xs font-bold text-rose-700">不足:</span>
+        <div className="mt-3 rounded-xl border border-night-orange/50 bg-black/30 px-3 py-2 text-sm text-night-glow">
+          <span className="mr-1 text-xs font-bold text-night-orange">不足:</span>
           {match.missingIngredients.map((ingredient) => (
             <Badge
               key={ingredient}
@@ -79,26 +79,26 @@ function RecipeCard({
 
       {ingredients.length ? (
         <div className="mt-4">
-          <h4 className="text-xs font-bold text-usagi-ink/70">材料</h4>
-          <ul className="mt-1 grid gap-1 text-sm text-usagi-ink/80">
+          <h4 className="text-xs font-bold text-cream-200/70">材料</h4>
+          <ul className="mt-1 grid gap-1 text-sm text-cream-100/80">
             {ingredients.map((ingredient) => {
               const amount = formatIngredientAmount(ingredient);
 
               return (
                 <li
                   key={ingredient.id}
-                  className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/60 pb-1 last:border-b-0"
+                  className="flex flex-wrap items-baseline justify-between gap-2 border-b border-night-gold/15 pb-1 last:border-b-0"
                 >
                   <span>
                     {ingredient.ingredient_name}
                     {!ingredient.is_required ? (
-                      <span className="ml-2 text-[10px] text-usagi-ink/40">
+                      <span className="ml-2 text-[10px] text-cream-200/40">
                         任意
                       </span>
                     ) : null}
                   </span>
                   {amount ? (
-                    <span className="text-xs font-medium text-usagi-ink/60">
+                    <span className="text-xs font-medium text-cream-200/60">
                       {amount}
                     </span>
                   ) : null}
@@ -109,22 +109,22 @@ function RecipeCard({
         </div>
       ) : null}
 
-      <dl className="mt-3 grid gap-2 text-xs text-usagi-ink/70 sm:grid-cols-3">
+      <dl className="mt-3 grid gap-2 text-xs text-cream-200/70 sm:grid-cols-3">
         {recipe.method ? (
           <div>
-            <dt className="font-bold text-usagi-ink/60">作り方</dt>
+            <dt className="font-bold text-night-glow/80">作り方</dt>
             <dd>{getMethodLabel(recipe.method)}</dd>
           </div>
         ) : null}
         {recipe.glass_type ? (
           <div>
-            <dt className="font-bold text-usagi-ink/60">グラス</dt>
+            <dt className="font-bold text-night-glow/80">グラス</dt>
             <dd>{recipe.glass_type}</dd>
           </div>
         ) : null}
         {recipe.garnish ? (
           <div>
-            <dt className="font-bold text-usagi-ink/60">ガーニッシュ</dt>
+            <dt className="font-bold text-night-glow/80">ガーニッシュ</dt>
             <dd>{recipe.garnish}</dd>
           </div>
         ) : null}
@@ -149,12 +149,12 @@ function RecipeSection({
   if (items.length === 0) {
     return (
       <section className="grid gap-3">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-usagi-ink">
+        <h3 className="flex items-center gap-2 text-sm font-bold text-night-glow">
           <span aria-hidden="true">{emoji}</span>
           {title}
         </h3>
         <Card tone="cream" padded={true}>
-          <p className="text-sm text-usagi-ink/70">{emptyMessage}</p>
+          <p className="text-sm text-cream-200/70">{emptyMessage}</p>
         </Card>
       </section>
     );
@@ -162,10 +162,10 @@ function RecipeSection({
 
   return (
     <section className="grid gap-3">
-      <h3 className="flex items-center gap-2 text-sm font-bold text-usagi-ink">
+      <h3 className="flex items-center gap-2 text-sm font-bold text-night-glow">
         <span aria-hidden="true">{emoji}</span>
         {title}
-        <span className="text-xs font-normal text-usagi-ink/50">
+        <span className="text-xs font-normal text-cream-200/50">
           ({items.length}件)
         </span>
       </h3>

@@ -13,11 +13,11 @@ function calcPercent(volumeMl: number | null, remainingMl: number | null) {
 }
 
 function toneFromPercent(percent: number | null) {
-  if (percent === null) return 'bg-cream-200';
-  if (percent <= 0) return 'bg-rose-300';
-  if (percent <= 25) return 'bg-usagi-orange';
-  if (percent <= 60) return 'bg-amber-400';
-  return 'bg-usagi-mint';
+  if (percent === null) return 'bg-cream-300/60';
+  if (percent <= 0) return 'bg-night-neon';
+  if (percent <= 25) return 'bg-night-orange';
+  if (percent <= 60) return 'bg-night-gold';
+  return 'bg-night-mint';
 }
 
 export function RemainingMeter({
@@ -33,9 +33,9 @@ export function RemainingMeter({
   return (
     <div className="w-full">
       {showLabel ? (
-        <div className="mb-1 flex items-center justify-between text-[11px] text-usagi-ink/70">
+        <div className="mb-1 flex items-center justify-between text-[11px] text-cream-200/70">
           <span>残量</span>
-          <span className="font-semibold text-usagi-ink">
+          <span className="font-semibold text-cream-50">
             {percent === null ? '—' : `${percent}%`}
             {remainingMl !== null && volumeMl
               ? ` (${remainingMl}/${volumeMl}ml)`
@@ -44,7 +44,7 @@ export function RemainingMeter({
         </div>
       ) : null}
       <div
-        className={`${trackHeight} w-full overflow-hidden rounded-full bg-cream-100 ring-1 ring-cream-200`}
+        className={`${trackHeight} w-full overflow-hidden rounded-full bg-black/45 ring-1 ring-night-gold/25`}
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}

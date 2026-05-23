@@ -50,35 +50,35 @@ export function ShelfPage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-x-hidden text-usagi-ink"
+      className="relative min-h-screen overflow-x-hidden text-cream-50"
       style={{
         background:
-          'radial-gradient(70% 46% at 50% 0%, rgba(255, 246, 219, 0.94) 0%, rgba(255, 246, 219, 0) 68%), linear-gradient(180deg, #fff7e6 0%, #fdf0cf 48%, #f7dfac 100%)',
+          'radial-gradient(70% 38% at 50% 0%, rgba(255, 198, 121, 0.18) 0%, rgba(255, 198, 121, 0) 62%), radial-gradient(54% 42% at 50% 42%, rgba(255, 95, 162, 0.09) 0%, rgba(255, 95, 162, 0) 70%), linear-gradient(180deg, #05060a 0%, #0a0c12 44%, #160d08 100%)',
       }}
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-52 opacity-80"
+        className="pointer-events-none absolute inset-x-0 top-0 h-72 opacity-90"
         style={{
           background:
-            'radial-gradient(36% 80% at 50% 0%, rgba(255, 198, 121, 0.38) 0%, rgba(255, 198, 121, 0) 74%)',
+            'radial-gradient(30% 80% at 50% 0%, rgba(255, 198, 121, 0.34) 0%, rgba(255, 198, 121, 0) 74%)',
         }}
       />
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-full opacity-[0.18]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-full opacity-[0.16]"
         style={{
           backgroundImage:
-            'radial-gradient(circle at 18px 18px, rgba(154, 106, 58, 0.16) 1.2px, transparent 1.3px)',
-          backgroundSize: '34px 34px',
+            'radial-gradient(circle at 18px 18px, rgba(255, 198, 121, 0.2) 1px, transparent 1.2px), radial-gradient(circle at 46px 54px, rgba(255, 95, 162, 0.16) 0.9px, transparent 1px)',
+          backgroundSize: '72px 72px',
         }}
       />
 
       <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-4 px-3 pb-12 pt-4 sm:px-6 sm:pt-5">
-        <header className="mx-auto flex w-full max-w-[620px] items-center justify-between gap-3 rounded-full border border-woody-200/90 bg-cream-50/82 px-3 py-2 shadow-soft backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-white/90 p-0.5 ring-1 ring-woody-300/70">
+        <header className="mx-auto flex w-full max-w-[650px] flex-wrap items-center justify-between gap-2 rounded-3xl border border-night-gold/35 bg-black/40 px-3 py-2 shadow-bar backdrop-blur-md sm:rounded-full">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="rounded-full bg-black/55 p-0.5 ring-1 ring-night-gold/45 shadow-neon">
               <img
                 src={logoUrl}
                 alt="ウサギBar"
@@ -88,21 +88,21 @@ export function ShelfPage() {
             </div>
             <div className="leading-tight">
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-usagi-orange drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                <span className="text-lg font-extrabold text-night-glow drop-shadow-[0_0_12px_rgba(255,198,121,0.45)]">
                   ウサギ
                 </span>
-                <span className="text-lg font-extrabold text-woody-700">
+                <span className="text-lg font-extrabold text-night-neon drop-shadow-[0_0_14px_rgba(255,95,162,0.5)]">
                   Bar
                 </span>
               </div>
-              <p className="text-[11px] font-semibold text-woody-500/80">
+              <p className="text-[11px] font-semibold text-cream-200/80">
                 — きょう、なに飲む? —
               </p>
             </div>
           </div>
           <Link
             to="/admin/login"
-            className="rounded-full border border-woody-300 bg-white/72 px-3 py-1.5 text-xs font-bold text-woody-700 shadow-chip hover:bg-usagi-orange hover:text-white"
+            className="shrink-0 rounded-full border border-night-gold/45 bg-night-warm/70 px-3 py-1.5 text-xs font-bold text-night-glow shadow-chip hover:border-night-neon hover:text-cream-50"
             aria-label="管理者画面へ"
           >
             管理
@@ -110,7 +110,7 @@ export function ShelfPage() {
         </header>
 
         {isLoading ? (
-          <div className="mx-auto w-full max-w-[620px] rounded-2xl border border-woody-200 bg-cream-50/78 p-3 text-woody-700 shadow-soft backdrop-blur">
+          <div className="mx-auto w-full max-w-[650px] rounded-2xl border border-night-gold/30 bg-night-ink/75 p-3 text-cream-100 shadow-bar backdrop-blur">
             <LoadingState label="酒棚を整えています…" />
           </div>
         ) : null}
@@ -124,14 +124,14 @@ export function ShelfPage() {
 
         {!isLoading && !error ? (
           items.length === 0 ? (
-            <div className="mx-auto w-full max-w-[620px] rounded-2xl border border-woody-200 bg-cream-50/78 p-2 shadow-soft backdrop-blur">
+            <div className="mx-auto w-full max-w-[650px] rounded-2xl border border-night-gold/30 bg-night-ink/75 p-2 shadow-bar backdrop-blur">
               <EmptyState
                 title="まだ酒棚が空っぽです"
                 mascotMessage="まずは1本、置いてみるか。管理画面から登録できるぞ。"
                 action={
                   <Link
                     to="/admin/login"
-                    className="rounded-full border border-usagi-orange bg-usagi-orange px-4 py-2 text-sm font-bold text-white shadow-soft hover:bg-usagi-orange/90"
+                    className="rounded-full border border-night-gold bg-night-gold px-4 py-2 text-sm font-bold text-night-deep shadow-neon hover:bg-night-glow"
                   >
                     管理画面へ
                   </Link>

@@ -63,10 +63,10 @@ export function AdminLoginPage() {
 
         <Card>
           <form onSubmit={handleSubmit} className="grid gap-4">
-            <label className="grid gap-1 text-sm font-semibold text-usagi-ink">
+            <label className="grid gap-1 text-sm font-semibold text-cream-50">
               メールアドレス
               <input
-                className="rounded-xl border border-cream-300 bg-white px-3 py-2 text-sm font-normal text-usagi-ink shadow-chip focus:border-usagi-orange focus:outline-none focus:ring-2 focus:ring-usagi-orange/30"
+                className="rounded-xl border border-night-gold/30 bg-black/35 px-3 py-2 text-sm font-normal text-cream-50 shadow-chip focus:border-night-neon focus:outline-none focus:ring-2 focus:ring-night-neon/25"
                 autoComplete="email"
                 type="email"
                 value={email}
@@ -74,10 +74,10 @@ export function AdminLoginPage() {
                 required
               />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-usagi-ink">
+            <label className="grid gap-1 text-sm font-semibold text-cream-50">
               パスワード
               <input
-                className="rounded-xl border border-cream-300 bg-white px-3 py-2 text-sm font-normal text-usagi-ink shadow-chip focus:border-usagi-orange focus:outline-none focus:ring-2 focus:ring-usagi-orange/30"
+                className="rounded-xl border border-night-gold/30 bg-black/35 px-3 py-2 text-sm font-normal text-cream-50 shadow-chip focus:border-night-neon focus:outline-none focus:ring-2 focus:ring-night-neon/25"
                 autoComplete="current-password"
                 type="password"
                 value={password}
@@ -95,7 +95,7 @@ export function AdminLoginPage() {
             </Button>
             <Link
               to="/"
-              className="text-center text-xs font-semibold text-usagi-ink/60 hover:text-usagi-ink"
+              className="text-center text-xs font-semibold text-cream-200/60 hover:text-cream-50"
             >
               ← 酒棚へ戻る
             </Link>

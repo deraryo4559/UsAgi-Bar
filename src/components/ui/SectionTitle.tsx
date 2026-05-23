@@ -28,14 +28,14 @@ export function SectionTitle({
           <HeadingTag
             className={
               level === 2
-                ? 'text-lg font-bold text-usagi-ink'
-                : 'text-base font-bold text-usagi-ink'
+                ? 'text-lg font-bold text-night-glow'
+                : 'text-base font-bold text-night-glow'
             }
           >
             {children}
           </HeadingTag>
           {description ? (
-            <p className="mt-0.5 text-xs text-usagi-ink/70">{description}</p>
+            <p className="mt-0.5 text-xs text-cream-200/70">{description}</p>
           ) : null}
         </div>
       </div>

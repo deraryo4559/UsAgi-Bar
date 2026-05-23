@@ -11,15 +11,15 @@ export function LoadingState({
     <div
       role="status"
       aria-live="polite"
-      className="flex items-center gap-3 rounded-2xl border border-cream-200 bg-white/80 px-4 py-3 text-sm text-usagi-ink/80 shadow-soft"
+      className="flex items-center gap-3 rounded-2xl border border-night-gold/30 bg-night-ink/80 px-4 py-3 text-sm text-cream-100/80 shadow-bar"
     >
       <span
         aria-hidden="true"
-        className="inline-block h-3 w-3 animate-pulse rounded-full bg-usagi-orange"
+        className="inline-block h-3 w-3 animate-pulse rounded-full bg-night-glow"
       />
       <div>
         <div className="font-medium">{label}</div>
-        {hint ? <div className="text-xs text-usagi-ink/60">{hint}</div> : null}
+        {hint ? <div className="text-xs text-cream-200/60">{hint}</div> : null}
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ export function MascotBubble({
 }: MascotBubbleProps) {
   const wrapperBase =
     variant === 'card'
-      ? 'rounded-2xl border border-cream-200 bg-white p-3 shadow-soft'
+      ? 'rounded-2xl border border-night-gold/30 bg-night-ink/80 p-3 shadow-bar'
       : '';
 
   const flexDir = align === 'left' ? 'flex-row' : 'flex-row-reverse';
@@ -37,11 +37,11 @@ export function MascotBubble({
       <img
         src={tanaUsagiUrl}
         alt="うさぎ店主"
-        className={`${sizeClasses[size]} shrink-0 select-none object-contain drop-shadow-sm`}
+        className={`${sizeClasses[size]} shrink-0 select-none object-contain drop-shadow-[0_8px_8px_rgba(0,0,0,0.5)]`}
         draggable={false}
       />
       <div
-        className={`relative max-w-[260px] rounded-2xl border border-usagi-ink/15 bg-white px-3 py-2 text-sm text-usagi-ink shadow-chip before:absolute before:top-3 before:h-3 before:w-3 before:rotate-45 before:border-l before:border-b before:border-usagi-ink/15 before:bg-white ${bubbleArrow}`}
+        className={`relative max-w-[260px] rounded-2xl border border-night-gold/35 bg-black/45 px-3 py-2 text-sm text-cream-50 shadow-chip before:absolute before:top-3 before:h-3 before:w-3 before:rotate-45 before:border-l before:border-b before:border-night-gold/35 before:bg-black/45 ${bubbleArrow}`}
       >
         {children}
       </div>

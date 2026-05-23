@@ -180,12 +180,12 @@ export function ItemDetailPage() {
     return (
       <AppShell title="アイテム詳細" backTo="/">
         <Card>
-          <p className="text-sm text-usagi-ink/80">
+          <p className="text-sm text-cream-100/80">
             アイテムが見つかりません。
           </p>
           <Link
             to="/"
-            className="mt-4 inline-flex rounded-full border border-cream-300 bg-white px-4 py-2 text-sm font-semibold text-usagi-ink hover:bg-cream-50"
+            className="mt-4 inline-flex rounded-full border border-night-gold/40 bg-night-warm/70 px-4 py-2 text-sm font-semibold text-cream-50 hover:border-night-neon"
           >
             ← 酒棚へ戻る
           </Link>

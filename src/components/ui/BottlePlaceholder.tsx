@@ -10,20 +10,20 @@ const toneByType: Record<
   { body: string; cap: string }
 > = {
   alcohol: {
-    body: 'from-woody-100 via-cream-50 to-woody-300',
-    cap: 'bg-woody-500',
+    body: 'from-night-glow/90 via-amber-200/80 to-night-wood',
+    cap: 'bg-night-gold',
   },
   drink: {
-    body: 'from-sky-100 via-cream-50 to-sky-300',
-    cap: 'bg-sky-600',
+    body: 'from-cyan-200/75 via-cream-50/80 to-night-navy',
+    cap: 'bg-cyan-500',
   },
   mixer: {
-    body: 'from-usagi-pinkSoft via-white to-usagi-pink',
-    cap: 'bg-rose-500',
+    body: 'from-night-neon/70 via-rose-100/80 to-night-mid',
+    cap: 'bg-night-neon',
   },
   other: {
-    body: 'from-usagi-mintSoft via-white to-usagi-mint',
-    cap: 'bg-emerald-600',
+    body: 'from-night-mint/75 via-emerald-100/75 to-night-navy',
+    cap: 'bg-night-mint',
   },
 };
 
@@ -38,13 +38,13 @@ export function BottlePlaceholder({
       className={`relative flex h-full w-full items-end justify-center ${className}`}
       aria-hidden="true"
     >
-      <div className="relative flex h-full w-[44%] min-w-5 max-w-12 flex-col items-center drop-shadow-[0_4px_4px_rgba(70,38,15,0.24)]">
+      <div className="relative flex h-full w-[44%] min-w-5 max-w-12 flex-col items-center drop-shadow-[0_8px_8px_rgba(0,0,0,0.55)]">
         <div className={`-mb-px h-[13%] w-[54%] rounded-t-sm ${tone.cap}`} />
         <div
-          className={`relative h-[87%] w-full overflow-hidden rounded-b-sm rounded-t-md border border-woody-400/70 bg-gradient-to-b ${tone.body} shadow-inner`}
+          className={`relative h-[87%] w-full overflow-hidden rounded-b-sm rounded-t-md border border-night-gold/40 bg-gradient-to-b ${tone.body} shadow-inner`}
         >
-          <div className="absolute inset-x-[16%] top-[8%] h-[18%] rounded-sm bg-white/50" />
-          <div className="mx-auto mt-[30%] h-[32%] w-[72%] rounded border border-white/60 bg-white/60" />
+          <div className="absolute inset-x-[16%] top-[8%] h-[18%] rounded-sm bg-white/35" />
+          <div className="mx-auto mt-[30%] h-[32%] w-[72%] rounded border border-night-gold/35 bg-black/30" />
         </div>
       </div>
     </div>

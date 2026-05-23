@@ -17,11 +17,11 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="grid gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-900 shadow-soft"
+      className="grid gap-3 rounded-2xl border border-rose-400/45 bg-rose-950/45 p-5 text-sm text-rose-100 shadow-bar"
     >
       <div>
         <p className="font-bold">{title}</p>
-        <p className="mt-1 whitespace-pre-wrap text-rose-900/90">{message}</p>
+        <p className="mt-1 whitespace-pre-wrap text-rose-100/90">{message}</p>
       </div>
       {mascotMessage ? <MascotBubble>{mascotMessage}</MascotBubble> : null}
       {action ? <div>{action}</div> : null}

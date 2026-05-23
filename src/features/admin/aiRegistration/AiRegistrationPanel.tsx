@@ -88,13 +88,13 @@ export function AiRegistrationPanel({
         : '画像アップロード後に実行できます。';
 
   return (
-    <section className="grid gap-3 rounded-xl border border-usagi-orange/40 bg-usagi-orangeSoft/40 p-4">
+    <section className="grid gap-3 rounded-xl border border-night-gold/35 bg-night-accent/45 p-4">
       <header className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-usagi-orange text-[10px] font-bold text-white">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-night-gold text-[10px] font-bold text-night-deep">
             2
           </span>
-          <h3 className="text-sm font-bold text-usagi-ink">
+          <h3 className="text-sm font-bold text-cream-50">
             画像からAI候補作成
           </h3>
           <Badge tone="accent" size="sm">
@@ -102,12 +102,12 @@ export function AiRegistrationPanel({
           </Badge>
         </div>
       </header>
-      <p className="text-xs text-usagi-ink/70">
+      <p className="text-xs text-cream-200/70">
         Storageへアップロード済みの画像をGemini
         Visionで解析し、登録候補を作成します。候補は直接保存されません。
       </p>
 
-      <div className="grid gap-3 rounded-xl border border-cream-200 bg-white p-3">
+      <div className="grid gap-3 rounded-xl border border-night-gold/25 bg-black/30 p-3">
         <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"
@@ -117,7 +117,7 @@ export function AiRegistrationPanel({
           >
             {isAnalyzingImage ? '画像解析中…' : '画像からAI候補作成'}
           </Button>
-          <span className="text-xs text-usagi-ink/70">{hint}</span>
+          <span className="text-xs text-cream-200/70">{hint}</span>
         </div>
 
         {imageAnalysisError ? (
@@ -131,14 +131,14 @@ export function AiRegistrationPanel({
 
         {imageAnalysisResult ? (
           <div className="grid gap-3">
-            <div className="text-xs text-usagi-ink/70">
+            <div className="text-xs text-cream-200/70">
               <Badge tone="accent" size="sm">
                 {imageAnalysisResult.candidates.length}件
               </Badge>
               のGemini Vision候補を作成しました。保存前に必ず確認してください。
             </div>
-            <div className="rounded-xl border border-cream-200 bg-cream-50 p-3 text-xs text-usagi-ink/80">
-              <div className="mb-2 font-bold text-usagi-ink">画像評価</div>
+            <div className="rounded-xl border border-night-gold/25 bg-night-ink/75 p-3 text-xs text-cream-100/80">
+              <div className="mb-2 font-bold text-night-glow">画像評価</div>
               <div className="grid gap-1 sm:grid-cols-2">
                 <div>
                   単体らしさ:{' '}
@@ -174,7 +174,7 @@ export function AiRegistrationPanel({
                 </div>
               </div>
               {imageAnalysisResult.image_assessment.notes ? (
-                <div className="mt-2 text-usagi-ink/70">
+                <div className="mt-2 text-cream-200/70">
                   {imageAnalysisResult.image_assessment.notes}
                 </div>
               ) : null}

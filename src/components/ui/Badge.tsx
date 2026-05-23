@@ -18,14 +18,14 @@ type BadgeProps = PropsWithChildren<
 >;
 
 const toneClasses: Record<BadgeTone, string> = {
-  neutral: 'bg-cream-100 text-usagi-ink border-cream-300',
-  makeable: 'bg-usagi-mintSoft text-emerald-800 border-usagi-mint',
-  near: 'bg-usagi-pinkSoft text-rose-800 border-usagi-pink',
-  warn: 'bg-amber-50 text-amber-900 border-amber-300',
-  info: 'bg-sky-50 text-sky-800 border-sky-200',
-  accent: 'bg-usagi-orangeSoft text-usagi-orange border-usagi-orange',
-  mint: 'bg-usagi-mintSoft text-emerald-800 border-usagi-mint',
-  pink: 'bg-usagi-pinkSoft text-rose-800 border-usagi-pink',
+  neutral: 'bg-black/35 text-cream-100 border-night-gold/30',
+  makeable: 'bg-night-mint/15 text-night-mint border-night-mint/55',
+  near: 'bg-night-orange/15 text-night-orange border-night-orange/55',
+  warn: 'bg-night-orange/15 text-night-glow border-night-orange/55',
+  info: 'bg-sky-400/15 text-sky-200 border-sky-300/35',
+  accent: 'bg-night-gold/15 text-night-glow border-night-gold/50',
+  mint: 'bg-night-mint/15 text-night-mint border-night-mint/55',
+  pink: 'bg-night-neon/15 text-pink-200 border-night-neon/55',
 };
 
 const sizeClasses = {

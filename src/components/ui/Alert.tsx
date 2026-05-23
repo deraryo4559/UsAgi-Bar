@@ -10,10 +10,10 @@ type AlertProps = PropsWithChildren<
 >;
 
 const toneClasses: Record<AlertTone, string> = {
-  info: 'bg-sky-50 border-sky-200 text-sky-900',
-  success: 'bg-usagi-mintSoft border-usagi-mint text-emerald-900',
-  warn: 'bg-amber-50 border-amber-200 text-amber-900',
-  error: 'bg-rose-50 border-rose-200 text-rose-900',
+  info: 'bg-sky-400/15 border-sky-300/35 text-sky-100',
+  success: 'bg-night-mint/15 border-night-mint/45 text-night-mint',
+  warn: 'bg-night-orange/15 border-night-orange/45 text-night-glow',
+  error: 'bg-rose-950/45 border-rose-400/45 text-rose-100',
 };
 
 export function Alert({

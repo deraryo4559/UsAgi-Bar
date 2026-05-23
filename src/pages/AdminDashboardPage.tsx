@@ -295,10 +295,10 @@ export function AdminDashboardPage() {
     return (
       <AppShell title="管理者画面" variant="admin">
         <Card>
-          <p className="text-sm text-usagi-ink/80">ログインが必要です。</p>
+          <p className="text-sm text-cream-100/80">ログインが必要です。</p>
           <Link
             to="/admin/login"
-            className="mt-4 inline-flex rounded-full border border-usagi-orange bg-usagi-orange px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-usagi-orange/90"
+            className="mt-4 inline-flex rounded-full border border-night-neon bg-night-neon px-4 py-2 text-sm font-semibold text-white shadow-neon hover:bg-night-neon/90"
           >
             ログインへ
           </Link>

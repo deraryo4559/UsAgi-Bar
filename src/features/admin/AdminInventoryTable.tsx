@@ -50,7 +50,7 @@ export function AdminInventoryTable({
 
   return (
     <Card padded={false} className="overflow-hidden">
-      <ul className="divide-y divide-cream-100">
+      <ul className="divide-y divide-night-gold/15">
         {items.map((item) => {
           const isBusy = busyItemId === item.id;
 
@@ -59,7 +59,7 @@ export function AdminInventoryTable({
               key={item.id}
               className="grid gap-3 p-4 sm:grid-cols-[64px_1fr_auto] sm:items-center"
             >
-              <div className="hidden h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-cream-50 ring-1 ring-cream-200 sm:flex">
+              <div className="hidden h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-black/35 ring-1 ring-night-gold/25 sm:flex">
                 {item.image_url ? (
                   <img
                     src={item.image_url}
@@ -68,13 +68,13 @@ export function AdminInventoryTable({
                     draggable={false}
                   />
                 ) : (
-                  <span className="text-[10px] text-usagi-ink/40">no img</span>
+                  <span className="text-[10px] text-cream-200/40">no img</span>
                 )}
               </div>
 
               <div className="grid gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-usagi-ink">{item.name}</span>
+                  <span className="font-bold text-cream-50">{item.name}</span>
                   <Badge tone={itemTypeTones[item.item_type]} size="sm">
                     {item.item_type}
                   </Badge>
@@ -101,7 +101,7 @@ export function AdminInventoryTable({
                     return (
                       <button
                         key={option.label}
-                        className="rounded-full border border-cream-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-usagi-ink/70 hover:bg-cream-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-full border border-night-gold/30 bg-black/25 px-2 py-0.5 text-[11px] font-semibold text-cream-100/70 hover:border-night-glow hover:text-cream-50 disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={isBusy || nextRemainingMl === null}
                         type="button"
                         onClick={() => {
