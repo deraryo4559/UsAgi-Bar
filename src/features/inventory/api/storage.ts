@@ -24,6 +24,11 @@ function getFileExtension(file: File) {
   return 'jpg';
 }
 
+export type UploadedInventoryImage = {
+  publicUrl: string;
+  path: string;
+};
+
 export function validateInventoryImageFile(file: File) {
   if (
     !SUPPORTED_INVENTORY_IMAGE_TYPES.includes(
@@ -38,7 +43,35 @@ export function validateInventoryImageFile(file: File) {
   }
 }
 
-export async function uploadInventoryImage(file: File) {
+export function extractInventoryImagePathFromPublicUrl(publicUrl: string) {
+  const trimmedUrl = publicUrl.trim();
+
+  if (!trimmedUrl) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(trimmedUrl);
+    const marker = `/storage/v1/object/public/${INVENTORY_IMAGES_BUCKET}/`;
+    const markerIndex = parsed.pathname.indexOf(marker);
+
+    if (markerIndex === -1) {
+      return null;
+    }
+
+    const path = decodeURIComponent(
+      parsed.pathname.slice(markerIndex + marker.length),
+    );
+
+    return path.startsWith('inventory/') ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function uploadInventoryImage(
+  file: File,
+): Promise<UploadedInventoryImage> {
   ensureSupabaseConfig();
   validateInventoryImageFile(file);
 
@@ -65,5 +98,8 @@ export async function uploadInventoryImage(file: File) {
     .from(INVENTORY_IMAGES_BUCKET)
     .getPublicUrl(filePath);
 
-  return data.publicUrl;
+  return {
+    publicUrl: data.publicUrl,
+    path: filePath,
+  };
 }

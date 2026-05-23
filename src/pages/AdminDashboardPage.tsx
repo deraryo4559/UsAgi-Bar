@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
+import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { ErrorState } from '../components/ui/ErrorState';
+import { LoadingState } from '../components/ui/LoadingState';
+import { SectionTitle } from '../components/ui/SectionTitle';
 import { AdminInventoryTable } from '../features/admin/AdminInventoryTable';
+import { AdminStepGuide } from '../features/admin/AdminStepGuide';
 import { InventoryItemForm } from '../features/admin/InventoryItemForm';
 import {
   emptyInventoryItemFormValues,
@@ -19,10 +25,15 @@ import {
   sortInventoryItems,
   updateInventoryItem,
 } from '../features/inventory/api/inventoryItems';
-import { uploadInventoryImage } from '../features/inventory/api/storage';
+import {
+  extractInventoryImagePathFromPublicUrl,
+  uploadInventoryImage,
+} from '../features/inventory/api/storage';
+import { fetchRecipeCatalog } from '../features/recipes/api/recipeCatalog';
 import { getSupabaseConfigErrorMessage, supabase } from '../lib/supabase/client';
 import { toErrorMessage } from '../lib/supabase/errors';
 import type { InventoryItem } from '../types/inventory';
+import type { CocktailIngredient, IngredientAlias } from '../types/recipes';
 
 export function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -35,11 +46,18 @@ export function AdminDashboardPage() {
     hasSupabaseConfig,
   } = useAdminSession();
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [cocktailIngredients, setCocktailIngredients] = useState<
+    CocktailIngredient[]
+  >([]);
+  const [ingredientAliases, setIngredientAliases] = useState<IngredientAlias[]>(
+    [],
+  );
   const [formValues, setFormValues] = useState<InventoryItemFormValues>(
     emptyInventoryItemFormValues,
   );
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePath, setImagePath] = useState<string | null>(null);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -53,8 +71,13 @@ export function AdminDashboardPage() {
     setError(null);
 
     try {
-      const nextItems = await listInventoryItems();
+      const [nextItems, recipeCatalog] = await Promise.all([
+        listInventoryItems(),
+        fetchRecipeCatalog(),
+      ]);
       setItems(sortInventoryItems(nextItems));
+      setCocktailIngredients(recipeCatalog.cocktailIngredients);
+      setIngredientAliases(recipeCatalog.ingredientAliases);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -84,12 +107,25 @@ export function AdminDashboardPage() {
       ...current,
       [key]: value,
     }));
+
+    if (key === 'image_url') {
+      setImagePath(extractInventoryImagePathFromPublicUrl(String(value)));
+    }
   }
 
   function resetForm() {
     setEditingItemId(null);
     setFormValues(emptyInventoryItemFormValues);
     setImageFile(null);
+    setImagePath(null);
+  }
+
+  function handleImageFileChange(file: File | null) {
+    setImageFile(file);
+
+    if (file) {
+      setImagePath(null);
+    }
   }
 
   function handleEdit(item: InventoryItem) {
@@ -98,6 +134,7 @@ export function AdminDashboardPage() {
     setEditingItemId(item.id);
     setFormValues(inventoryItemToFormValues(item));
     setImageFile(null);
+    setImagePath(extractInventoryImagePathFromPublicUrl(item.image_url ?? ''));
   }
 
   async function handleUploadImage() {
@@ -110,13 +147,16 @@ export function AdminDashboardPage() {
     setError(null);
 
     try {
-      const publicUrl = await uploadInventoryImage(imageFile);
+      const uploadedImage = await uploadInventoryImage(imageFile);
       setFormValues((current) => ({
         ...current,
-        image_url: publicUrl,
+        image_url: uploadedImage.publicUrl,
       }));
+      setImagePath(uploadedImage.path);
       setImageFile(null);
-      setMessage('画像をアップロードしました。保存すると在庫アイテムに反映されます。');
+      setMessage(
+        '画像をアップロードしました。保存すると在庫アイテムに反映されます。',
+      );
     } catch (nextError) {
       setError(toErrorMessage(nextError));
     } finally {
@@ -138,11 +178,12 @@ export function AdminDashboardPage() {
       let nextFormValues = formValues;
 
       if (imageFile) {
-        const publicUrl = await uploadInventoryImage(imageFile);
+        const uploadedImage = await uploadInventoryImage(imageFile);
         nextFormValues = {
           ...nextFormValues,
-          image_url: publicUrl,
+          image_url: uploadedImage.publicUrl,
         };
+        setImagePath(uploadedImage.path);
       }
 
       if (editingItemId) {
@@ -194,7 +235,10 @@ export function AdminDashboardPage() {
     }
   }
 
-  async function handleUpdateRemaining(item: InventoryItem, remainingMl: number) {
+  async function handleUpdateRemaining(
+    item: InventoryItem,
+    remainingMl: number,
+  ) {
     setBusyItemId(item.id);
     setMessage(null);
     setError(null);
@@ -230,37 +274,35 @@ export function AdminDashboardPage() {
 
   if (!hasSupabaseConfig) {
     return (
-      <AppShell title="管理者画面">
-        <div className="rounded border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+      <AppShell title="管理者画面" variant="admin">
+        <Alert tone="warn" title="Supabase設定が未完了です">
           {getSupabaseConfigErrorMessage() ??
             '.env に Supabase のURLとAnon Keyを設定してください。'}
-        </div>
+        </Alert>
       </AppShell>
     );
   }
 
   if (isSessionLoading) {
     return (
-      <AppShell title="管理者画面">
-        <div className="rounded border border-stone-200 bg-white p-5 text-sm text-stone-600">
-          ログイン状態を確認しています。
-        </div>
+      <AppShell title="管理者画面" variant="admin">
+        <LoadingState label="ログイン状態を確認しています…" />
       </AppShell>
     );
   }
 
   if (!session) {
     return (
-      <AppShell title="管理者画面">
-        <div className="rounded border border-stone-200 bg-white p-5">
-          <p className="text-sm text-stone-600">ログインが必要です。</p>
+      <AppShell title="管理者画面" variant="admin">
+        <Card>
+          <p className="text-sm text-usagi-ink/80">ログインが必要です。</p>
           <Link
             to="/admin/login"
-            className="mt-4 inline-flex rounded border border-stone-300 px-3 py-2 text-sm font-medium"
+            className="mt-4 inline-flex rounded-full border border-usagi-orange bg-usagi-orange px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-usagi-orange/90"
           >
             ログインへ
           </Link>
-        </div>
+        </Card>
       </AppShell>
     );
   }
@@ -268,98 +310,105 @@ export function AdminDashboardPage() {
   if (!isAdmin) {
     const adminReason = profile
       ? 'profiles.role が admin ではありません。'
-      : "このアカウントには管理者権限がありません。Supabaseのprofilesテーブルに、このユーザーのuser_idとrole='admin'を登録してください。";
+      : 'このアカウントには管理者権限がありません。Supabaseのprofilesテーブルに、このユーザーのuser_idとrole=adminを登録してください。';
 
     return (
-      <AppShell title="管理者画面">
-        <div className="rounded border border-red-200 bg-red-50 p-5 text-sm text-red-800">
-          <p>admin権限がないためアクセスできません。</p>
-          <p className="mt-2">{adminReason}</p>
-          {sessionError ? <p className="mt-2">{sessionError}</p> : null}
-          <Button
-            className="mt-4"
-            variant="secondary"
-            disabled={isSigningOut}
-            onClick={handleSignOut}
-          >
-            {isSigningOut ? 'ログアウト中' : 'ログアウト'}
-          </Button>
-        </div>
+      <AppShell title="管理者画面" variant="admin">
+        <ErrorState
+          title="admin権限がないためアクセスできません"
+          message={[adminReason, sessionError ?? ''].filter(Boolean).join('\n')}
+          mascotMessage="悪いな、ここは関係者だけだ。"
+          action={
+            <Button
+              variant="secondary"
+              disabled={isSigningOut}
+              onClick={handleSignOut}
+            >
+              {isSigningOut ? 'ログアウト中…' : 'ログアウト'}
+            </Button>
+          }
+        />
       </AppShell>
     );
   }
 
-  return (
-    <AppShell title="管理者画面">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-stone-600">
-            在庫登録、編集、削除、残量更新、画像アップロードを行えます。
-          </p>
-          <p className="mt-1 text-xs text-stone-500">
-            ログイン中: {session.user.email ?? session.user.id} / role:{' '}
-            {profile?.role}
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          disabled={isSigningOut}
-          onClick={handleSignOut}
-        >
-          {isSigningOut ? 'ログアウト中' : 'ログアウト'}
-        </Button>
-      </div>
+  const headerActions = (
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled={isSigningOut}
+      onClick={handleSignOut}
+    >
+      {isSigningOut ? 'ログアウト中…' : 'ログアウト'}
+    </Button>
+  );
 
-      {message ? (
-        <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-          {message}
-        </div>
-      ) : null}
-      {error ? (
-        <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          {error}
-        </div>
-      ) : null}
+  return (
+    <AppShell
+      title="管理者画面"
+      variant="admin"
+      subtitle={`${session.user.email ?? session.user.id} (${profile?.role})`}
+      headerActions={headerActions}
+    >
+      <AdminStepGuide />
+
+      {message ? <Alert tone="success">{message}</Alert> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
 
       <section className="grid gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold">
-            {editingItemId ? '在庫アイテム編集' : '在庫アイテム新規登録'}
-          </h2>
-          <Button type="button" variant="secondary" onClick={resetForm}>
-            新規入力に戻す
-          </Button>
-        </div>
+        <SectionTitle
+          icon="📝"
+          description="画像から候補を作るか、手入力で登録できます。AI候補は保存前に確認・修正してください。"
+          actions={
+            <Button type="button" variant="secondary" size="sm" onClick={resetForm}>
+              新規入力に戻す
+            </Button>
+          }
+        >
+          {editingItemId ? '在庫アイテムを編集' : '在庫アイテムを新規登録'}
+        </SectionTitle>
         <InventoryItemForm
           values={formValues}
           imageFile={imageFile}
+          imagePath={imagePath}
+          categoryReferenceData={{
+            cocktailIngredients,
+            ingredientAliases,
+          }}
+          inventoryItems={items}
+          currentItemId={editingItemId}
           isSubmitting={isSubmitting}
           isUploadingImage={isUploadingImage}
           submitLabel={editingItemId ? '更新' : '登録'}
           onCancel={resetForm}
           onChange={updateFormValue}
-          onImageFileChange={setImageFile}
+          onEditSimilarItem={handleEdit}
+          onImageFileChange={handleImageFileChange}
           onSubmit={handleSave}
           onUploadImage={handleUploadImage}
         />
       </section>
 
       <section className="grid gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold">在庫一覧</h2>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={isLoadingItems}
-            onClick={() => void loadItems()}
-          >
-            再読み込み
-          </Button>
-        </div>
+        <SectionTitle
+          icon="🥃"
+          description={`登録済み ${items.length} 件`}
+          actions={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isLoadingItems}
+              onClick={() => void loadItems()}
+            >
+              再読み込み
+            </Button>
+          }
+        >
+          在庫一覧
+        </SectionTitle>
         {isLoadingItems ? (
-          <p className="rounded border border-stone-200 bg-white p-4 text-sm text-stone-600">
-            在庫を読み込んでいます。
-          </p>
+          <LoadingState label="在庫を読み込んでいます…" />
         ) : (
           <AdminInventoryTable
             items={items}

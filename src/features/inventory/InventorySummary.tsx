@@ -1,3 +1,7 @@
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { BottlePlaceholder } from '../../components/ui/BottlePlaceholder';
+import { RemainingMeter } from '../../components/ui/RemainingMeter';
 import type { InventoryItem } from '../../types/inventory';
 
 const itemTypeLabels: Record<InventoryItem['item_type'], string> = {
@@ -7,19 +11,18 @@ const itemTypeLabels: Record<InventoryItem['item_type'], string> = {
   other: 'その他',
 };
 
+const itemTypeTones: Record<
+  InventoryItem['item_type'],
+  'accent' | 'info' | 'pink' | 'mint'
+> = {
+  alcohol: 'accent',
+  drink: 'info',
+  mixer: 'pink',
+  other: 'mint',
+};
+
 function formatNumber(value: number | null, unit: string) {
-  return value === null ? '-' : `${value}${unit}`;
-}
-
-function remainingPercent(item: InventoryItem) {
-  if (!item.volume_ml || item.remaining_ml === null) {
-    return 0;
-  }
-
-  return Math.max(
-    0,
-    Math.min(100, Math.round((item.remaining_ml / item.volume_ml) * 100)),
-  );
+  return value === null ? '—' : `${value}${unit}`;
 }
 
 type InventorySummaryProps = {
@@ -27,66 +30,75 @@ type InventorySummaryProps = {
 };
 
 export function InventorySummary({ item }: InventorySummaryProps) {
-  const percent = remainingPercent(item);
-
   return (
-    <section className="grid gap-5 rounded border border-stone-200 bg-white p-4 sm:grid-cols-[220px_1fr]">
-      <div className="flex min-h-56 items-center justify-center rounded bg-stone-100">
-        {item.image_url ? (
-          <img
-            src={item.image_url}
-            alt={item.name}
-            className="max-h-56 object-contain"
-          />
-        ) : (
-          <div className="flex flex-col items-center gap-2 text-stone-500">
-            <div className="h-36 w-16 rounded-t-lg border border-stone-500 bg-gradient-to-b from-stone-100 to-stone-300" />
-            <span className="text-xs">画像なし</span>
-          </div>
-        )}
-      </div>
-      <div className="space-y-4">
-        <div>
-          <p className="text-sm text-stone-500">{itemTypeLabels[item.item_type]}</p>
-          <h2 className="mt-1 text-2xl font-bold">{item.name}</h2>
-        </div>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-stone-500">カテゴリ</dt>
-            <dd className="font-medium">{item.category ?? '-'}</dd>
-          </div>
-          <div>
-            <dt className="text-stone-500">サブカテゴリ</dt>
-            <dd className="font-medium">{item.sub_category ?? '-'}</dd>
-          </div>
-          <div>
-            <dt className="text-stone-500">度数</dt>
-            <dd className="font-medium">
-              {formatNumber(item.alcohol_percentage, '%')}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-stone-500">容量 / 残量</dt>
-            <dd className="font-medium">
-              {formatNumber(item.volume_ml, 'ml')} /{' '}
-              {formatNumber(item.remaining_ml, 'ml')}
-            </dd>
-          </div>
-        </dl>
-        <div>
-          <div className="mb-1 flex justify-between text-xs text-stone-500">
-            <span>残量</span>
-            <span>{percent}%</span>
-          </div>
-          <div className="h-3 overflow-hidden rounded-full bg-stone-200">
-            <div
-              className="h-full rounded-full bg-emerald-600"
-              style={{ width: `${percent}%` }}
+    <Card className="overflow-hidden">
+      <div className="grid gap-5 sm:grid-cols-[240px_1fr]">
+        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-cream-50 ring-1 ring-cream-200">
+          {item.image_url ? (
+            <img
+              src={item.image_url}
+              alt={item.name}
+              className="max-h-full max-w-full object-contain"
+              draggable={false}
             />
-          </div>
+          ) : (
+            <div className="flex h-full w-full max-w-[60%] flex-col items-center justify-end pb-3">
+              <BottlePlaceholder itemType={item.item_type} />
+              <span className="mt-2 text-[11px] text-usagi-ink/50">画像なし</span>
+            </div>
+          )}
         </div>
-        {item.memo ? <p className="text-sm text-stone-600">{item.memo}</p> : null}
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={itemTypeTones[item.item_type]} size="sm">
+                {itemTypeLabels[item.item_type]}
+              </Badge>
+              {item.category ? (
+                <Badge tone="neutral" size="sm">
+                  {item.category}
+                </Badge>
+              ) : null}
+              {item.sub_category ? (
+                <Badge tone="neutral" size="sm">
+                  {item.sub_category}
+                </Badge>
+              ) : null}
+            </div>
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
+              {item.name}
+            </h2>
+          </div>
+
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-usagi-ink/60">度数</dt>
+              <dd className="font-semibold">
+                {formatNumber(item.alcohol_percentage, '%')}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-usagi-ink/60">容量</dt>
+              <dd className="font-semibold">
+                {formatNumber(item.volume_ml, 'ml')}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <RemainingMeter
+                volumeMl={item.volume_ml}
+                remainingMl={item.remaining_ml}
+              />
+            </div>
+          </dl>
+
+          {item.memo ? (
+            <p className="rounded-xl bg-cream-50 px-3 py-2 text-sm text-usagi-ink/80 ring-1 ring-cream-200">
+              {item.memo}
+            </p>
+          ) : null}
+        </div>
       </div>
-    </section>
+    </Card>
   );
 }

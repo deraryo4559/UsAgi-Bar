@@ -1,7 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
+import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { MascotBubble } from '../components/ui/MascotBubble';
 import { useAdminSession } from '../features/auth/useAdminSession';
 import {
   getSupabaseConfigErrorMessage,
@@ -52,48 +55,53 @@ export function AdminLoginPage() {
   }
 
   return (
-    <AppShell title="管理者ログイン">
-      <form
-        onSubmit={handleSubmit}
-        className="mx-auto grid w-full max-w-md gap-4 rounded border border-stone-200 bg-white p-5"
-      >
-        <label className="grid gap-1 text-sm font-medium">
-          メールアドレス
-          <input
-            className="rounded border border-stone-300 px-3 py-2"
-            autoComplete="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-medium">
-          パスワード
-          <input
-            className="rounded border border-stone-300 px-3 py-2"
-            autoComplete="current-password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </label>
-        {message ? (
-          <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            {message}
-          </p>
-        ) : null}
-        <Button type="submit" disabled={isSubmitting || isSessionLoading}>
-          {isSubmitting || isSessionLoading ? '確認中' : 'ログイン'}
-        </Button>
-        <Link
-          to="/"
-          className="text-center text-sm font-medium text-stone-500 hover:text-stone-900"
-        >
-          酒棚へ戻る
-        </Link>
-      </form>
+    <AppShell title="管理者ログイン" backTo="/" variant="admin">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+        <MascotBubble size="md" variant="card">
+          管理者だけが入れるバックヤードだ。メールとパスワードで入ってくれ。
+        </MascotBubble>
+
+        <Card>
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <label className="grid gap-1 text-sm font-semibold text-usagi-ink">
+              メールアドレス
+              <input
+                className="rounded-xl border border-cream-300 bg-white px-3 py-2 text-sm font-normal text-usagi-ink shadow-chip focus:border-usagi-orange focus:outline-none focus:ring-2 focus:ring-usagi-orange/30"
+                autoComplete="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-usagi-ink">
+              パスワード
+              <input
+                className="rounded-xl border border-cream-300 bg-white px-3 py-2 text-sm font-normal text-usagi-ink shadow-chip focus:border-usagi-orange focus:outline-none focus:ring-2 focus:ring-usagi-orange/30"
+                autoComplete="current-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+            </label>
+            {message ? <Alert tone="warn">{message}</Alert> : null}
+            <Button
+              type="submit"
+              variant="accent"
+              disabled={isSubmitting || isSessionLoading}
+            >
+              {isSubmitting || isSessionLoading ? '確認中…' : 'ログイン'}
+            </Button>
+            <Link
+              to="/"
+              className="text-center text-xs font-semibold text-usagi-ink/60 hover:text-usagi-ink"
+            >
+              ← 酒棚へ戻る
+            </Link>
+          </form>
+        </Card>
+      </div>
     </AppShell>
   );
 }

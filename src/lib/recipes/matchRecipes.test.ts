@@ -63,6 +63,64 @@ const aliases: IngredientAlias[] = [
   },
 ];
 
+const homeBarAliases: IngredientAlias[] = [
+  ...aliases,
+  {
+    id: 'alias-sui',
+    canonical_name: 'ジン',
+    alias_name: 'SUNTORY GIN SUI',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-shochu',
+    canonical_name: '焼酎',
+    alias_name: '三岳',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-kahlua',
+    canonical_name: 'コーヒーリキュール',
+    alias_name: 'Kahlúa',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-sake',
+    canonical_name: '日本酒',
+    alias_name: '浦霞',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-whisky',
+    canonical_name: 'ウイスキー',
+    alias_name: '角瓶',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-beer',
+    canonical_name: 'ビール',
+    alias_name: 'beer',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-soda',
+    canonical_name: 'ソーダ',
+    alias_name: '炭酸水',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-cola',
+    canonical_name: 'コーラ',
+    alias_name: 'cola',
+    created_at: timestamp,
+  },
+  {
+    id: 'alias-ginger',
+    canonical_name: 'ジンジャーエール',
+    alias_name: 'ginger ale',
+    created_at: timestamp,
+  },
+];
+
 const baseItem: InventoryItem = {
   id: 'item-1',
   name: 'ボトル',
@@ -89,6 +147,65 @@ const tonicItem: InventoryItem = {
   volume_ml: 500,
   remaining_ml: 500,
 };
+
+function makeRecipe(id: string, name: string): CocktailRecipe {
+  return {
+    ...recipe,
+    id,
+    name,
+    description: `${name}のテスト用レシピ。`,
+    garnish: null,
+  };
+}
+
+function makeIngredient({
+  id,
+  recipeId,
+  name,
+  type,
+}: {
+  id: string;
+  recipeId: string;
+  name: string;
+  type: string;
+}): CocktailIngredient {
+  return {
+    id,
+    recipe_id: recipeId,
+    ingredient_name: name,
+    ingredient_type: type,
+    amount: 45,
+    unit: 'ml',
+    is_required: true,
+    substitute_group: null,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+}
+
+function makeInventoryItem({
+  id,
+  name,
+  itemType,
+  category = null,
+}: {
+  id: string;
+  name: string;
+  itemType: InventoryItem['item_type'];
+  category?: string | null;
+}): InventoryItem {
+  return {
+    ...baseItem,
+    id,
+    name,
+    item_type: itemType,
+    category,
+    sub_category: null,
+    alcohol_percentage: itemType === 'alcohol' ? 25 : null,
+    volume_ml: 700,
+    remaining_ml: 700,
+  };
+}
 
 describe('matchRecipes', () => {
   it('returns makeable for seed-like gin tonic ingredients', () => {
@@ -214,5 +331,248 @@ describe('matchRecipes', () => {
       'スクリュードライバー',
     ]);
     expect(prioritized[0]?.usesTargetItem).toBe(true);
+  });
+
+  it('returns makeable for shochu soda through aliases', () => {
+    const shochuSoda = makeRecipe('recipe-shochu-soda', '焼酎ソーダ割り');
+    const results = matchRecipes({
+      inventoryItems: [
+        makeInventoryItem({
+          id: 'item-shochu',
+          name: '三岳',
+          itemType: 'alcohol',
+        }),
+        makeInventoryItem({
+          id: 'item-soda',
+          name: '炭酸水',
+          itemType: 'drink',
+        }),
+      ],
+      cocktailRecipes: [shochuSoda],
+      cocktailIngredients: [
+        makeIngredient({
+          id: 'ingredient-shochu',
+          recipeId: shochuSoda.id,
+          name: '焼酎',
+          type: 'alcohol',
+        }),
+        makeIngredient({
+          id: 'ingredient-soda',
+          recipeId: shochuSoda.id,
+          name: 'ソーダ',
+          type: 'drink',
+        }),
+      ],
+      ingredientAliases: [
+        ...aliases,
+        {
+          id: 'alias-shochu',
+          canonical_name: '焼酎',
+          alias_name: '三岳',
+          created_at: timestamp,
+        },
+        {
+          id: 'alias-soda',
+          canonical_name: 'ソーダ',
+          alias_name: '炭酸水',
+          created_at: timestamp,
+        },
+      ],
+    });
+
+    expect(results[0]?.status).toBe('makeable');
+  });
+
+  it('returns makeable for kahlua milk through aliases', () => {
+    const kahluaMilk = makeRecipe('recipe-kahlua-milk', 'カルーアミルク');
+    const results = matchRecipes({
+      inventoryItems: [
+        makeInventoryItem({
+          id: 'item-kahlua',
+          name: 'KAHLUA',
+          itemType: 'alcohol',
+        }),
+        makeInventoryItem({
+          id: 'item-milk',
+          name: '牛乳',
+          itemType: 'drink',
+        }),
+      ],
+      cocktailRecipes: [kahluaMilk],
+      cocktailIngredients: [
+        makeIngredient({
+          id: 'ingredient-kahlua',
+          recipeId: kahluaMilk.id,
+          name: 'コーヒーリキュール',
+          type: 'alcohol',
+        }),
+        makeIngredient({
+          id: 'ingredient-milk',
+          recipeId: kahluaMilk.id,
+          name: '牛乳',
+          type: 'drink',
+        }),
+      ],
+      ingredientAliases: [
+        ...aliases,
+        {
+          id: 'alias-kahlua',
+          canonical_name: 'コーヒーリキュール',
+          alias_name: 'KAHLUA',
+          created_at: timestamp,
+        },
+      ],
+    });
+
+    expect(results[0]?.status).toBe('makeable');
+  });
+
+  it('returns makeable for shandy gaff with beer and ginger ale', () => {
+    const shandyGaff = makeRecipe('recipe-shandy-gaff', 'シャンディガフ');
+    const results = matchRecipes({
+      inventoryItems: [
+        makeInventoryItem({
+          id: 'item-beer',
+          name: 'beer',
+          itemType: 'alcohol',
+        }),
+        makeInventoryItem({
+          id: 'item-ginger',
+          name: 'ginger ale',
+          itemType: 'drink',
+        }),
+      ],
+      cocktailRecipes: [shandyGaff],
+      cocktailIngredients: [
+        makeIngredient({
+          id: 'ingredient-beer',
+          recipeId: shandyGaff.id,
+          name: 'ビール',
+          type: 'alcohol',
+        }),
+        makeIngredient({
+          id: 'ingredient-ginger',
+          recipeId: shandyGaff.id,
+          name: 'ジンジャーエール',
+          type: 'drink',
+        }),
+      ],
+      ingredientAliases: [
+        ...aliases,
+        {
+          id: 'alias-beer',
+          canonical_name: 'ビール',
+          alias_name: 'beer',
+          created_at: timestamp,
+        },
+        {
+          id: 'alias-ginger',
+          canonical_name: 'ジンジャーエール',
+          alias_name: 'ginger ale',
+          created_at: timestamp,
+        },
+      ],
+    });
+
+    expect(results[0]?.status).toBe('makeable');
+  });
+
+  it('connects AI-normalized home-bar inventory names to expected makeable recipes', () => {
+    const cases: {
+      recipeName: string;
+      requiredIngredients: [string, string];
+      inventoryItems: {
+        id: string;
+        name: string;
+        itemType: InventoryItem['item_type'];
+      }[];
+    }[] = [
+      {
+        recipeName: 'ジンソーダ',
+        requiredIngredients: ['ジン', 'ソーダ'],
+        inventoryItems: [
+          { id: 'case-sui', name: 'SUNTORY GIN SUI', itemType: 'alcohol' },
+          { id: 'case-soda-1', name: '炭酸水', itemType: 'drink' },
+        ],
+      },
+      {
+        recipeName: 'カルーアミルク',
+        requiredIngredients: ['コーヒーリキュール', '牛乳'],
+        inventoryItems: [
+          { id: 'case-kahlua', name: 'Kahlúa', itemType: 'alcohol' },
+          { id: 'case-milk', name: '牛乳', itemType: 'drink' },
+        ],
+      },
+      {
+        recipeName: '焼酎オレンジ',
+        requiredIngredients: ['焼酎', 'オレンジジュース'],
+        inventoryItems: [
+          { id: 'case-mitake', name: '三岳', itemType: 'alcohol' },
+          {
+            id: 'case-orange',
+            name: 'オレンジジュース',
+            itemType: 'drink',
+          },
+        ],
+      },
+      {
+        recipeName: '日本酒ソーダ',
+        requiredIngredients: ['日本酒', 'ソーダ'],
+        inventoryItems: [
+          { id: 'case-urakasumi', name: '浦霞', itemType: 'alcohol' },
+          { id: 'case-soda-2', name: '炭酸水', itemType: 'drink' },
+        ],
+      },
+      {
+        recipeName: 'ウイスキーコーク',
+        requiredIngredients: ['ウイスキー', 'コーラ'],
+        inventoryItems: [
+          { id: 'case-kakubin', name: '角瓶', itemType: 'alcohol' },
+          { id: 'case-cola', name: 'cola', itemType: 'drink' },
+        ],
+      },
+      {
+        recipeName: 'ハイボール',
+        requiredIngredients: ['ウイスキー', 'ソーダ'],
+        inventoryItems: [
+          { id: 'case-kakubin-highball', name: '角瓶', itemType: 'alcohol' },
+          { id: 'case-soda-3', name: '炭酸水', itemType: 'drink' },
+        ],
+      },
+      {
+        recipeName: 'シャンディガフ',
+        requiredIngredients: ['ビール', 'ジンジャーエール'],
+        inventoryItems: [
+          { id: 'case-beer', name: 'beer', itemType: 'alcohol' },
+          { id: 'case-ginger', name: 'ginger ale', itemType: 'drink' },
+        ],
+      },
+    ];
+
+    cases.forEach((testCase, index) => {
+      const targetRecipe = makeRecipe(`recipe-home-bar-${index}`, testCase.recipeName);
+      const results = matchRecipes({
+        inventoryItems: testCase.inventoryItems.map((item) =>
+          makeInventoryItem(item),
+        ),
+        cocktailRecipes: [targetRecipe],
+        cocktailIngredients: testCase.requiredIngredients.map(
+          (ingredientName, ingredientIndex) =>
+            makeIngredient({
+              id: `ingredient-home-bar-${index}-${ingredientIndex}`,
+              recipeId: targetRecipe.id,
+              name: ingredientName,
+              type: ingredientIndex === 0 ? 'alcohol' : 'drink',
+            }),
+        ),
+        ingredientAliases: homeBarAliases,
+      });
+
+      expect(results[0], testCase.recipeName).toMatchObject({
+        recipeId: targetRecipe.id,
+        status: 'makeable',
+        missingIngredients: [],
+      });
+    });
   });
 });

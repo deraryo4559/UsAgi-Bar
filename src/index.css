@@ -3,17 +3,19 @@
 @tailwind utilities;
 
 :root {
-  color: #292524;
-  background: #f8fafc;
+  color: #3a322c;
+  background: #fef4e3;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    'Hiragino Sans', 'Yu Gothic', 'Segoe UI', sans-serif;
+    'Hiragino Maru Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', 'Segoe UI',
+    system-ui, -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background-color: #fef4e3;
 }
 
 a {
@@ -25,4 +27,11 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+/* 棚画像の白フチを馴染ませるためのユーティリティ
+   shelf.png はアルファ無しのRGBで書き出されている可能性があり、
+   背景クリーム色に対して周囲が浮く場合に multiply ブレンドで馴染ませる。 */
+.shelf-blend {
+  mix-blend-mode: multiply;
 }

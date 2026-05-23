@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
+import { Card } from '../components/ui/Card';
+import { ErrorState } from '../components/ui/ErrorState';
+import { LoadingState } from '../components/ui/LoadingState';
+import { MascotBubble } from '../components/ui/MascotBubble';
 import { InventorySummary } from '../features/inventory/InventorySummary';
 import { RecipeMatchList } from '../features/recipes/RecipeMatchList';
 import {
@@ -30,6 +34,19 @@ type DetailData = {
   cocktailIngredients: CocktailIngredient[];
   ingredientAliases: IngredientAlias[];
 };
+
+function pickMascotMessage(
+  makeableCount: number,
+  nearCount: number,
+): string | null {
+  if (makeableCount > 0) {
+    return '今夜はこれで一杯いけるぞ。';
+  }
+  if (nearCount > 0) {
+    return 'あと1つで作れるやつがあるぞ。';
+  }
+  return null;
+}
 
 export function ItemDetailPage() {
   const { id } = useParams();
@@ -142,47 +159,57 @@ export function ItemDetailPage() {
 
   if (isLoading) {
     return (
-      <AppShell title="アイテム詳細">
-        <div className="rounded border border-stone-200 bg-white p-5 text-sm text-stone-600">
-          アイテム詳細を読み込んでいます。
-        </div>
+      <AppShell title="アイテム詳細" backTo="/">
+        <LoadingState label="アイテムを取り出しています…" />
       </AppShell>
     );
   }
 
   if (error) {
     return (
-      <AppShell title="アイテム詳細">
-        <div className="rounded border border-red-200 bg-red-50 p-5 text-sm text-red-800">
-          {error}
-        </div>
+      <AppShell title="アイテム詳細" backTo="/">
+        <ErrorState
+          message={error}
+          mascotMessage="うまく取り出せなかった。もう一度試してくれ。"
+        />
       </AppShell>
     );
   }
 
   if (!data?.item) {
     return (
-      <AppShell title="アイテム詳細">
-        <div className="rounded border border-stone-200 bg-white p-5">
-          <p className="text-sm text-stone-600">アイテムが見つかりません。</p>
+      <AppShell title="アイテム詳細" backTo="/">
+        <Card>
+          <p className="text-sm text-usagi-ink/80">
+            アイテムが見つかりません。
+          </p>
           <Link
             to="/"
-            className="mt-4 inline-flex rounded border border-stone-300 px-3 py-2 text-sm font-medium"
+            className="mt-4 inline-flex rounded-full border border-cream-300 bg-white px-4 py-2 text-sm font-semibold text-usagi-ink hover:bg-cream-50"
           >
-            酒棚へ戻る
+            ← 酒棚へ戻る
           </Link>
-        </div>
+        </Card>
       </AppShell>
     );
   }
 
+  const mascotMessage = pickMascotMessage(
+    recipeSections.makeable.length,
+    recipeSections.near.length,
+  );
+
   return (
-    <AppShell title="アイテム詳細">
+    <AppShell title={data.item.name} backTo="/">
       <InventorySummary item={data.item} />
-      <section>
-        <h2 className="mb-3 text-lg font-bold">
-          このアイテムを使う・今作れるカクテル
-        </h2>
+
+      {mascotMessage ? (
+        <MascotBubble size="md" variant="card">
+          {mascotMessage}
+        </MascotBubble>
+      ) : null}
+
+      <section className="grid gap-3">
         <RecipeMatchList
           makeableRecipes={recipeSections.makeable}
           nearRecipes={recipeSections.near}

@@ -26,4 +26,14 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['supabase/functions/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: {
+        ...globals.browser,
+        Deno: 'readonly',
+      },
+    },
+  },
 );
