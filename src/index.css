@@ -35,3 +35,7 @@ textarea {
 .shelf-blend {
   mix-blend-mode: multiply;
 }
+
+.shelf-product-image {
+  filter: saturate(1.06) contrast(1.03) brightness(1.03);
+}
