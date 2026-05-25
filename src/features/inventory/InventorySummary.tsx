@@ -3,6 +3,10 @@ import { Badge } from '../../components/ui/Badge';
 import { BottlePlaceholder } from '../../components/ui/BottlePlaceholder';
 import { RemainingMeter } from '../../components/ui/RemainingMeter';
 import type { InventoryItem } from '../../types/inventory';
+import {
+  getInventoryDisplayImageUrl,
+  hasGeneratedThumbnail,
+} from './inventoryImages';
 
 const itemTypeLabels: Record<InventoryItem['item_type'], string> = {
   alcohol: 'お酒',
@@ -30,23 +34,43 @@ type InventorySummaryProps = {
 };
 
 export function InventorySummary({ item }: InventorySummaryProps) {
+  const displayImageUrl = getInventoryDisplayImageUrl(item);
+  const showsThumbnail = hasGeneratedThumbnail(item);
+
   return (
     <Card className="overflow-hidden">
       <div className="grid gap-5 sm:grid-cols-[240px_1fr]">
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-black/35 ring-1 ring-night-gold/30">
-          {item.image_url ? (
-            <img
-              src={item.image_url}
-              alt={item.name}
-              className="max-h-full max-w-full object-contain drop-shadow-[0_14px_18px_rgba(0,0,0,0.58)]"
-              draggable={false}
-            />
-          ) : (
-            <div className="flex h-full w-full max-w-[60%] flex-col items-center justify-end pb-3">
-              <BottlePlaceholder itemType={item.item_type} />
-              <span className="mt-2 text-[11px] text-cream-200/50">画像なし</span>
+        <div className="grid gap-3">
+          <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-black/35 ring-1 ring-night-gold/30">
+            {displayImageUrl ? (
+              <img
+                src={displayImageUrl}
+                alt={item.name}
+                className="max-h-full max-w-full object-contain drop-shadow-[0_14px_18px_rgba(0,0,0,0.58)]"
+                draggable={false}
+              />
+            ) : (
+              <div className="flex h-full w-full max-w-[60%] flex-col items-center justify-end pb-3">
+                <BottlePlaceholder itemType={item.item_type} />
+                <span className="mt-2 text-[11px] text-cream-200/50">
+                  画像なし
+                </span>
+              </div>
+            )}
+          </div>
+          {showsThumbnail && item.image_url ? (
+            <div className="rounded-2xl border border-night-gold/25 bg-black/25 p-2">
+              <div className="mb-1 text-[11px] font-bold text-cream-200/60">
+                元画像
+              </div>
+              <img
+                src={item.image_url}
+                alt={`${item.name}の元画像`}
+                className="max-h-28 w-full rounded-xl object-contain"
+                draggable={false}
+              />
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-4">

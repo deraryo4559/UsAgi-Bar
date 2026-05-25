@@ -121,7 +121,7 @@ MVPではAuthユーザー作成時に `profiles` を自動作成するtriggerは
 - カクテル照合にはGemini APIを使わず、通常のTypeScriptロジックによるレシピ照合を優先します。
 - Gemini APIはAI登録補助でのみ使い、APIキーはSupabase Edge Functions側でSecret管理します。
 - AI登録補助はGemini Visionを主方式にします。管理者が明示実行したStorage画像だけをEdge Function経由でGeminiへ送ります。
-- 物体検出や複数本の自動分割は次フェーズ以降です。
+- 複数アイテム画像の物体検出はGeminiではなくブラウザ側MLで行います。YOLO/ONNX Runtime Webで瓶・缶・紙パックなどの位置を検出し、Canvasで切り抜いてからGemini Visionの商品判定へ流します。
 
 `recipe_matches` テーブルは将来の判定キャッシュ用として残しています。MVPでは在庫更新とキャッシュ同期の複雑さを避けるため、`inventory_items`, `cocktail_recipes`, `cocktail_ingredients`, `ingredient_aliases` を取得して、クライアント側で `matchRecipes` を実行します。
 
@@ -152,29 +152,124 @@ Gemini APIキーをReact/Viteの環境変数やフロントエンドコードに
 
 ## AI登録補助（Gemini Vision）
 
-AI登録補助はGemini Visionに一本化しています。管理者が画像をStorageへアップロードし、`画像からAI候補作成` を押したときだけ、Supabase Storage内の画像をEdge Function `analyze-inventory-image` 経由でGeminiへ送ります。
+AI登録補助では、Gemini Visionの役割を「切り抜き済み商品画像の中身判定・構造化」に限定します。管理画面では、管理者が `画像を選ぶ` だけで、Storage保存、ブラウザ側MLによる複数アイテム検出、Canvas切り抜き、Gemini Vision解析、候補フォーム作成まで自動で進みます。
 
 登録補助フロー:
 
-1. 管理者が画像を選択し、既存の画像アップロードで `inventory-images` に保存します。
-2. `画像からAI候補作成` を押します。
-3. Edge Function `analyze-inventory-image` がadmin権限を確認します。
-4. Edge FunctionがStorage画像を取得し、Gemini Visionへ送ります。
-5. Geminiが登録候補JSONを返します。
-6. 候補カードに正規化結果、確認ポイント、カクテルDB照合、重複候補、フォーム反映後プレビューを表示します。
-7. 管理者が `フォームに反映` を押します。
-8. 管理者が値を確認・修正します。
-9. 既存の登録/更新ボタンで `inventory_items` に保存します。
+1. 管理者が画像を選びます。
+2. フロントが画像を `inventory-images` にアップロードします。
+3. ブラウザ側MLで瓶・缶・紙パック・ペットボトルなどの候補位置を検出します。
+4. 検出できた候補はブラウザ側Canvasで切り抜き、crop画像をStorageへ保存します。
+5. crop画像ごとに既存の `analyze-inventory-image` を呼び、Gemini Visionで登録候補JSONを作ります。
+6. モデル未配置、モデル読み込み失敗、検出0件、推論失敗時は、画像全体を1件として `analyze-inventory-image` にフォールバックします。
+7. 候補は最初から編集可能な候補フォームとして表示します。
+8. 管理者が値を確認・修正し、登録対象を選びます。
+9. `選択した候補を登録` を押した候補だけ、既存のRLS付きCRUD処理で `inventory_items` に保存します。
 
-Gemini Visionモードは、任意の外部URLを解析しません。フロントから送るのは `{ bucket: "inventory-images", path: "inventory/xxxxx.jpg" }` だけで、Edge Function側でも `inventory-images` バケット、`inventory/` 配下、対応MIME type、画像サイズを検証します。画像を外部AI APIへ送る処理なので、自動実行ではなく管理者の明示操作にしています。
+管理画面UIは `画像を添付`、`解析中`、`判定結果` の3ステップに整理しています。画像選択後は内部処理ボタンを出さず、解析中は `src/img/komaokuri/` のうさぎ画像をファイル名順にコマ送り表示し、`画像を保存中`、`候補を探し中`、`切り抜き中`、`商品判定中`、`サムネ作成中`、`候補整理中` のフェーズを表示します。
 
-Gemini Vision候補はフォーム反映前に正規化します。ブランド名や商品名をそのまま `category` にせず、`ingredient_aliases` を優先してカクテル照合に使いやすい標準材料名へ寄せます。例として、`SUNTORY SUI` は `category = ジン`、`カルーア` は `category = コーヒーリキュール`、`三岳` は `category = 焼酎` を候補にします。aliasで補正した場合は、候補カードに「categoryをaliasに基づいて補正しました」と表示します。
+解析に失敗した場合は `src/img/faild.png` のうさぎ画像を表示し、原因の要約、再解析、別画像選択、手入力への切り替えを案内します。技術的なエラー詳細は折りたたみ表示にし、通常画面で大きく出しすぎない方針です。
 
-`volume_ml` があり `remaining_ml` が未判定の場合は、管理者確認前提で `remaining_ml = volume_ml` を候補として補完します。`alcohol_percentage` は画像から読めない場合、推測で埋めず空欄のままにします。`category` が現在のカクテルDBまたは `ingredient_aliases` に存在しない場合は、保存をブロックせず、候補カードに警告を表示します。
+Gemini Visionモードは、任意の外部URLを解析しません。フロントからEdge Functionへ送るのは `{ bucket: "inventory-images", path: "inventory/xxxxx.jpg" }` だけで、Edge Function側でも `inventory-images` バケット、`inventory/` 配下、対応MIME type、画像サイズを検証します。物体検出はGeminiに送らず端末内で行い、画像を外部AI APIへ送るのは商品判定が必要なcrop画像またはフォールバック時の元画像だけです。
 
-AI候補はDBへ直接保存しません。管理者が候補カードを確認し、「フォームに反映」で既存フォームへ値を入れ、必要に応じて修正してから既存の登録/更新ボタンで保存します。エラー時も画像URLやフォーム入力は残し、手入力登録に戻せます。
+Gemini Vision候補は候補フォーム表示前に正規化します。ブランド名や商品名をそのまま `category` にせず、`ingredient_aliases` を優先してカクテル照合に使いやすい標準材料名へ寄せます。例として、`SUNTORY SUI` は `category = ジン`、`カルーア` は `category = コーヒーリキュール`、`三岳` は `category = 焼酎` を候補にします。aliasで補正した場合は、候補フォームの確認ポイントに補正内容を表示します。
 
-AI候補カードでは、既存の `inventory_items` との類似チェックも行います。`name` の完全一致、alias補正後の `category` 一致、AIが読んだ文字に既存nameが含まれる場合、同じcategoryで容量が近い場合などをもとに、重複候補を警告表示します。MVPでは保存を自動で止めず、必要なら「この在庫を編集」から既存アイテムの編集モードへ移り、既存フォームの更新ボタンで保存します。
+`volume_ml` があり `remaining_ml` が未判定の場合は、管理者確認前提で `remaining_ml = volume_ml` を候補として補完します。`alcohol_percentage` は画像から読めない場合、推測で埋めず空欄のままにします。`category` が現在のカクテルDBまたは `ingredient_aliases` に存在しない場合は、保存をブロックせず、候補フォームに警告を表示します。
+
+AI候補はDBへ完全自動保存しません。候補フォームへの入力までは自動化しますが、最終保存は管理者が候補を確認・修正して `選択した候補を登録` を押したときだけ実行します。エラー時は別の画像で再解析するか、`手入力に切り替える` から従来フォームで登録できます。
+
+AI候補フォームでは、既存の `inventory_items` との類似チェックも行います。`name` の完全一致、alias補正後の `category` 一致、AIが読んだ文字に既存nameが含まれる場合、同じcategoryで容量が近い場合などをもとに、重複候補を警告表示します。MVPでは保存を自動で止めず、必要なら「この在庫を編集」から既存アイテムの編集モードへ移り、既存フォームの更新ボタンで保存します。
+
+### AI生成サムネイル
+
+写真の白背景、暗さ、反射、余白で酒棚上の商品が見えにくい場合に備え、crop画像をもとにイラスト風サムネイルを自動生成します。商品判定の根拠は元画像とGemini Vision結果であり、生成サムネイルは見やすくするための表示画像です。
+
+候補作成後、フロントは候補ごとにSupabase Edge Function `generate-inventory-thumbnail` を順番に呼びます。生成に失敗しても候補登録はブロックせず、元画像のまま登録できます。候補フォームには `再生成` と `元画像を使う` の導線を残し、生成結果が気に入らない場合だけ手動で調整します。
+
+サムネイル生成は、単純なimg2img結果をそのまま保存しません。Edge Function側で、生成前にcrop画像の背景を外し、最大の被写体だけを縦長キャンバスへ再配置してからCloudflare Workers AIへ渡します。生成後もエッジ背景を透過し、最大の被写体を512x768の透過PNGへ再配置します。横に広すぎる被写体はサムネイル用の最大比率に収めるため、細長い瓶や缶が正方形内で小さく潰れたり、逆に横長に引き伸ばされたように見える問題を抑えます。
+
+既存の生成済みサムネイルは自動では変わりません。縦横比が不自然なサムネイルは、Edge Functionを再deployした後に候補フォームから再生成してください。元画像やcrop画像は残るため、生成に失敗しても元画像のまま登録・表示できます。
+
+保存される項目:
+
+- `thumbnail_url`: 酒棚で優先表示する生成サムネイルURL
+- `thumbnail_prompt`: 生成に使ったprompt
+- `thumbnail_provider`: `cloudflare-workers-ai`
+- `thumbnail_generated_at`: 生成日時
+
+表示優先度:
+
+1. `thumbnail_url`
+2. `image_url`
+3. `BottlePlaceholder`
+
+Storageは `inventory-thumbnails` bucketを使います。読み取りは公開、書き込み・更新・削除はadminのみです。追加migration `supabase/migrations/0004_add_inventory_thumbnail_fields.sql` を適用すると、DBカラム追加とbucket/policy設定が入ります。
+
+必要なSupabase Edge Function Secret:
+
+```bash
+supabase secrets set CLOUDFLARE_ACCOUNT_ID=your-cloudflare-account-id
+supabase secrets set CLOUDFLARE_API_TOKEN=your-cloudflare-workers-ai-token
+```
+
+Cloudflare API TokenはWorkers AIを実行できる権限を持つものを使ってください。React/Vite側に `VITE_IMAGE_GENERATION_API_KEY`、`VITE_CLOUDFLARE_API_TOKEN`、`VITE_CLOUDFLARE_ACCOUNT_ID` は作りません。CloudflareのSecretとGemini APIキーはいずれもEdge Function側だけで管理します。
+
+本番deploy例:
+
+```bash
+supabase functions deploy generate-inventory-thumbnail --project-ref nyeqnaaqlwxheqehsmgv
+```
+
+Cloudflare Workers AIは無料枠やモデル提供条件が変わる可能性があります。完全無料が永続する保証はありません。現在のデフォルトモデルは、crop画像を入力できる `@cf/runwayml/stable-diffusion-v1-5-img2img` です。`CLOUDFLARE_IMAGE_MODEL` Secretで別モデルに変える場合も、必ず `image_b64` / img2img に対応したモデルを指定してください。text-to-image専用モデルを指定すると `input tensor image is not present` のような400エラーになります。候補API比較と運用上の注意は [docs/thumbnail_generation_research.md](docs/thumbnail_generation_research.md) を参照してください。
+
+### 複数アイテム検出モード
+
+複数のお酒・ドリンク・割材が1枚に写っている場合も、管理者がモードを選ぶ必要はありません。通常の `画像を選ぶ` から始めると、まずブラウザ側MLで複数アイテム検出を試し、検出できた候補を自動で切り抜いて一括解析します。
+
+処理フロー:
+
+1. ONNX Runtime Webで `public/models/inventory-detector/model.onnx` 相当のYOLOモデルを読み込みます。
+2. ブラウザ上で瓶・缶・紙パック・ペットボトルなどの候補を検出します。
+3. YOLOは商品名を当てず、切り抜き範囲だけを作ります。
+4. フロントは採用候補をブラウザ側Canvasで切り抜きます。
+5. crop画像を `inventory-images` の `inventory/crops/` 配下へアップロードします。
+6. 既存の `analyze-inventory-image` をcropごとに順番に呼び、一括解析として複数候補フォームを表示します。
+7. 管理者が候補を確認・修正し、登録対象にする/しないを選びます。
+8. `選択した候補を登録` で選択済み候補を順番に保存します。一部失敗した場合は失敗候補だけ画面に残します。
+
+複数検出モードでもAI候補から直接DB保存しません。保存は必ず候補フォームとRLS経由です。任意外部URLは受け付けず、Gemini解析対象は `inventory-images` 内の `inventory/` 配下画像だけです。
+
+検出枠の座標はブラウザ側MLの画像ピクセル座標として扱います。crop処理はEdge Functionではなくブラウザ側Canvasで行い、Edge Function側の画像処理負荷を増やさない方針です。
+
+モデルファイルが未配置、読み込み失敗、推論失敗、検出候補0件の場合は、画像全体解析へフォールバックします。候補が作れている場合、通常画面では失敗扱いにせず、必要な補足だけ `検出詳細` に表示します。それでも候補作成に失敗した場合は手入力登録へ戻せます。
+
+### ローカル検出モデル
+
+ONNX Runtime Webを使う前提で、モデル配置パスは以下を想定しています。
+
+```text
+public/models/inventory-detector/model.onnx
+public/models/inventory-detector/classes.json
+public/models/inventory-detector/ort-wasm-simd-threaded.jsep.wasm
+```
+
+GitHub Pages公開時はViteのpublic assetsとして配信されます。モデルが未配置でも登録フローは止めず、画像全体を単体商品としてGemini Vision解析します。これはSupabase更新ではなく、フロント側に `model.onnx` を配置する必要がある機能です。
+
+`ort-wasm-simd-threaded.jsep.wasm` は ONNX Runtime Web の実行に必要なWASMランタイムです。これが公開パスで取得できない場合、ブラウザは `index.html` をWASMとして読んで `expected magic word ... found <!do` のようなエラーになります。
+
+`classes.json` はモデルのclass idを `bottle / cup / wine_glass / can / carton / plastic_bottle / drink_pack` などの検出対象へ対応付けます。COCO系モデルでは `bottle / wine glass / cup` は含まれやすい一方、`can / carton / plastic bottle / drink pack` は標準classに存在しないことがあります。存在しないclassを無理にある前提にせず、カスタムモデルを使う場合だけ追加してください。
+
+Geminiは物体検出には使いません。ブラウザ側YOLOは切り抜き範囲だけを作り、Gemini Visionは切り抜き後の商品判定に使います。詳しいモデル配置、`classes.json`、YOLO export、debug確認は [docs/local_detection_model_setup.md](docs/local_detection_model_setup.md) を参照してください。
+
+この方式により、Geminiに大きな集合写真を送って物体検出させる回数を減らし、crop画像だけを商品判定へ送ることで画像入力サイズを抑えやすくします。ただし、最終的なトークン使用量は画像枚数、画像サイズ、Geminiモデルに依存します。`analyze-inventory-image` はGeminiの `usageMetadata` のうち `promptTokenCount / candidatesTokenCount / totalTokenCount` を安全な範囲で返せるようにしており、今後crop前後の実測に使います。
+
+token節約効果は `model.onnx` 配置後に実測してください。比較対象は、画像全体をGeminiに送った場合の `totalTokenCount`、crop画像を送った場合の `totalTokenCount`、複数cropの合計 `totalTokenCount` です。
+
+Gemini APIが `429` を返した場合は、無料枠またはレート制限に達しています。この場合、残りのcrop画像解析と画像全体フォールバックは止め、管理画面にクォータ確認の案内を表示します。時間を置くか、Google AI Studioの使用量・課金設定を確認してください。
+
+### 旧Gemini検出Function
+
+`supabase/functions/detect-inventory-items` は旧方式です。すぐには削除しませんが、現行UIからは呼びません。今後の主経路では、複数物体検出はブラウザ側MLで行い、Gemini Visionは切り抜き済み商品画像の中身判定だけに使います。
 
 ### Gemini APIキー
 
@@ -198,6 +293,7 @@ Edge Functionは以下にあります。
 
 ```text
 supabase/functions/analyze-inventory-image/index.ts
+supabase/functions/generate-inventory-thumbnail/index.ts
 ```
 
 ローカルserve例:
@@ -210,6 +306,14 @@ supabase functions serve analyze-inventory-image --env-file .env
 
 ```bash
 supabase functions deploy analyze-inventory-image
+supabase functions deploy generate-inventory-thumbnail
+```
+
+実Supabaseプロジェクトへdeployする場合:
+
+```bash
+supabase functions deploy analyze-inventory-image --project-ref nyeqnaaqlwxheqehsmgv
+supabase functions deploy generate-inventory-thumbnail --project-ref nyeqnaaqlwxheqehsmgv
 ```
 
 `supabase/config.toml` で `verify_jwt = true` を明示しています。`--no-verify-jwt` 前提では運用しません。関数内でもSupabase Auth JWTを確認し、`profiles.role = 'admin'` のユーザーだけGeminiを呼べるようにしています。
@@ -217,13 +321,13 @@ supabase functions deploy analyze-inventory-image
 ### 管理画面での確認手順
 
 1. 管理者として `#/admin/login` からログインします。
-2. `#/admin` の在庫登録フォームで画像を選択します。
-3. `画像アップロード` を押してStorageへ保存します。
-4. `画像からAI候補作成` を押します。
-5. 画像評価、画像から読めた文字、視覚的な根拠、候補内容を確認します。
-6. 正規化後のフォーム反映値、カクテルDB照合、未入力項目、自動補完項目、重複候補、確認ポイントを確認します。
-7. `フォームに反映` を押します。
-8. 管理者が内容を修正してから、既存の `登録` または `更新` ボタンで保存します。
+2. `#/admin` で `画像を選ぶ` を押し、単体または複数本が写った画像を選択します。
+3. 解析中画面でうさぎのコマ送りアニメーションと5フェーズ表示が出ることを確認します。
+4. 候補フォームが表示されたら、画像プレビュー、商品名、category、容量、残量、確認ポイント、重複候補を確認します。
+5. 必要に応じて候補フォームを修正し、登録対象にする/しないを選びます。
+6. `登録する` を押します。
+7. 登録後、折りたたみの `登録済みアイテムを見る` を開いて在庫一覧に追加されたことを確認します。
+8. 画像解析に失敗した場合は、失敗うさぎ画面から `もう一度解析する`、`別の画像を選ぶ`、`手入力に切り替える` を使います。
 
 Geminiが失敗した場合、画像やフォーム入力を見直すか、そのまま手入力登録へ戻してください。カクテル照合は引き続き `matchRecipes.ts` がクライアント側で都度計算し、`recipe_matches` には保存しません。
 

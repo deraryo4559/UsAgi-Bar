@@ -10,6 +10,10 @@ export type InventoryItem = {
   volume_ml: number | null;
   remaining_ml: number | null;
   image_url: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_prompt?: string | null;
+  thumbnail_provider?: string | null;
+  thumbnail_generated_at?: string | null;
   memo: string | null;
   display_order: number | null;
   created_at: string;

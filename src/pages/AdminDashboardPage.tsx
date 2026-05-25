@@ -10,6 +10,11 @@ import { SectionTitle } from '../components/ui/SectionTitle';
 import { AdminInventoryTable } from '../features/admin/AdminInventoryTable';
 import { AdminStepGuide } from '../features/admin/AdminStepGuide';
 import { InventoryItemForm } from '../features/admin/InventoryItemForm';
+import { AutoAiRegistrationPanel } from '../features/admin/aiRegistration/AutoAiRegistrationPanel';
+import type {
+  CandidateRegistrationInput,
+  CandidateRegistrationResult,
+} from '../features/admin/aiRegistration/aiRegistrationFlow';
 import {
   emptyInventoryItemFormValues,
   formValuesToInventoryItemInput,
@@ -56,6 +61,7 @@ export function AdminDashboardPage() {
     emptyInventoryItemFormValues,
   );
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [isManualMode, setIsManualMode] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
@@ -115,6 +121,7 @@ export function AdminDashboardPage() {
 
   function resetForm() {
     setEditingItemId(null);
+    setIsManualMode(false);
     setFormValues(emptyInventoryItemFormValues);
     setImageFile(null);
     setImagePath(null);
@@ -131,6 +138,7 @@ export function AdminDashboardPage() {
   function handleEdit(item: InventoryItem) {
     setMessage(null);
     setError(null);
+    setIsManualMode(true);
     setEditingItemId(item.id);
     setFormValues(inventoryItemToFormValues(item));
     setImageFile(null);
@@ -203,6 +211,56 @@ export function AdminDashboardPage() {
       await loadItems();
     } catch (nextError) {
       setError(toErrorMessage(nextError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleRegisterAiCandidates(
+    candidates: CandidateRegistrationInput[],
+  ): Promise<CandidateRegistrationResult[]> {
+    if (!isAdmin) {
+      return candidates.map((candidate) => ({
+        localId: candidate.localId,
+        ok: false,
+        error: 'admin権限がないため保存できません。',
+      }));
+    }
+
+    setIsSubmitting(true);
+    setMessage(null);
+    setError(null);
+
+    const results: CandidateRegistrationResult[] = [];
+
+    try {
+      for (const candidate of candidates) {
+        try {
+          await createInventoryItem(
+            formValuesToInventoryItemInput(candidate.values),
+          );
+          results.push({
+            localId: candidate.localId,
+            ok: true,
+            error: null,
+          });
+        } catch (nextError) {
+          results.push({
+            localId: candidate.localId,
+            ok: false,
+            error: toErrorMessage(nextError),
+          });
+        }
+      }
+
+      const successCount = results.filter((result) => result.ok).length;
+
+      if (successCount > 0) {
+        await loadItems();
+        setMessage(`${successCount}件の在庫アイテムを登録しました。`);
+      }
+
+      return results;
     } finally {
       setIsSubmitting(false);
     }
@@ -358,67 +416,90 @@ export function AdminDashboardPage() {
       <section className="grid gap-3">
         <SectionTitle
           icon="📝"
-          description="画像から候補を作るか、手入力で登録できます。AI候補は保存前に確認・修正してください。"
+          description="画像を選ぶだけで候補作成まで進みます。AI候補は保存前に確認・修正してください。"
           actions={
-            <Button type="button" variant="secondary" size="sm" onClick={resetForm}>
-              新規入力に戻す
-            </Button>
+            editingItemId || isManualMode ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={resetForm}
+              >
+                AI登録に戻る
+              </Button>
+            ) : null
           }
         >
-          {editingItemId ? '在庫アイテムを編集' : '在庫アイテムを新規登録'}
+          {editingItemId ? '在庫アイテムを編集' : '在庫アイテムを登録'}
         </SectionTitle>
-        <InventoryItemForm
-          values={formValues}
-          imageFile={imageFile}
-          imagePath={imagePath}
-          categoryReferenceData={{
-            cocktailIngredients,
-            ingredientAliases,
-          }}
-          inventoryItems={items}
-          currentItemId={editingItemId}
-          isSubmitting={isSubmitting}
-          isUploadingImage={isUploadingImage}
-          submitLabel={editingItemId ? '更新' : '登録'}
-          onCancel={resetForm}
-          onChange={updateFormValue}
-          onEditSimilarItem={handleEdit}
-          onImageFileChange={handleImageFileChange}
-          onSubmit={handleSave}
-          onUploadImage={handleUploadImage}
-        />
-      </section>
-
-      <section className="grid gap-3">
-        <SectionTitle
-          icon="🥃"
-          description={`登録済み ${items.length} 件`}
-          actions={
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={isLoadingItems}
-              onClick={() => void loadItems()}
-            >
-              再読み込み
-            </Button>
-          }
-        >
-          在庫一覧
-        </SectionTitle>
-        {isLoadingItems ? (
-          <LoadingState label="在庫を読み込んでいます…" />
+        {editingItemId || isManualMode ? (
+          <InventoryItemForm
+            values={formValues}
+            imageFile={imageFile}
+            imagePath={imagePath}
+            isSubmitting={isSubmitting}
+            isUploadingImage={isUploadingImage}
+            submitLabel={editingItemId ? '更新' : '登録'}
+            onCancel={resetForm}
+            onChange={updateFormValue}
+            onImageFileChange={handleImageFileChange}
+            onSubmit={handleSave}
+            onUploadImage={handleUploadImage}
+          />
         ) : (
-          <AdminInventoryTable
-            items={items}
-            busyItemId={busyItemId}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-            onUpdateRemaining={handleUpdateRemaining}
+          <AutoAiRegistrationPanel
+            referenceData={{
+              cocktailIngredients,
+              ingredientAliases,
+            }}
+            inventoryItems={items}
+            currentItemId={editingItemId}
+            isRegistering={isSubmitting}
+            onEditSimilarItem={handleEdit}
+            onManualMode={() => {
+              resetForm();
+              setIsManualMode(true);
+            }}
+            onRegisterCandidates={handleRegisterAiCandidates}
           />
         )}
       </section>
+
+      <details className="rounded-2xl border border-night-gold/30 bg-night-ink/70 p-4 shadow-bar">
+        <summary className="cursor-pointer text-sm font-extrabold text-cream-50">
+          登録済みアイテムを見る（{items.length}件）
+        </summary>
+        <section className="mt-4 grid gap-3">
+          <SectionTitle
+            icon="🥃"
+            description="編集・削除・残量更新はこちらから行えます。"
+            actions={
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={isLoadingItems}
+                onClick={() => void loadItems()}
+              >
+                再読み込み
+              </Button>
+            }
+          >
+            在庫一覧
+          </SectionTitle>
+          {isLoadingItems ? (
+            <LoadingState label="在庫を読み込んでいます…" />
+          ) : (
+            <AdminInventoryTable
+              items={items}
+              busyItemId={busyItemId}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              onUpdateRemaining={handleUpdateRemaining}
+            />
+          )}
+        </section>
+      </details>
     </AppShell>
   );
 }

@@ -5,12 +5,7 @@ import {
   calculateRemainingMl,
   inventoryItemTypes,
 } from '../inventory/api/inventoryItems';
-import { AiRegistrationPanel } from './aiRegistration/AiRegistrationPanel';
-import type { CategoryReferenceData } from './aiRegistration/aiCandidateNormalization';
-import { applyAiCandidateToFormValues } from './aiRegistration/aiRegistrationMapper';
-import type { AiInventoryCandidate } from './aiRegistration/types';
 import type { InventoryItemFormValues } from './inventoryForm';
-import type { InventoryItem } from '../../types/inventory';
 
 const presetOptions = [
   { label: '100%', ratio: 1 },
@@ -30,6 +25,9 @@ const fieldLabels: Record<string, string> = {
   remaining_ml: '残量 remaining_ml',
   display_order: '表示順 display_order',
   image_url: 'image_url',
+  thumbnail_url: 'thumbnail_url',
+  thumbnail_prompt: 'thumbnail_prompt',
+  thumbnail_provider: 'thumbnail_provider',
 };
 
 const inputClass =
@@ -39,9 +37,6 @@ type InventoryItemFormProps = {
   values: InventoryItemFormValues;
   imageFile: File | null;
   imagePath: string | null;
-  categoryReferenceData: CategoryReferenceData;
-  inventoryItems: InventoryItem[];
-  currentItemId?: string | null;
   isSubmitting: boolean;
   isUploadingImage: boolean;
   submitLabel: string;
@@ -53,16 +48,12 @@ type InventoryItemFormProps = {
   onSubmit: () => void;
   onCancel: () => void;
   onUploadImage: () => void;
-  onEditSimilarItem?: (item: InventoryItem) => void;
 };
 
 export function InventoryItemForm({
   values,
   imageFile,
   imagePath,
-  categoryReferenceData,
-  inventoryItems,
-  currentItemId,
   isSubmitting,
   isUploadingImage,
   submitLabel,
@@ -71,7 +62,6 @@ export function InventoryItemForm({
   onSubmit,
   onCancel,
   onUploadImage,
-  onEditSimilarItem,
 }: InventoryItemFormProps) {
   const volumeMl = values.volume_ml.trim() ? Number(values.volume_ml) : null;
   const canUsePreset = volumeMl !== null && Number.isFinite(volumeMl);
@@ -93,27 +83,13 @@ export function InventoryItemForm({
     }
   }
 
-  function handleApplyAiCandidate(candidate: AiInventoryCandidate) {
-    const nextValues = applyAiCandidateToFormValues(values, candidate);
-
-    (Object.keys(nextValues) as (keyof InventoryItemFormValues)[]).forEach(
-      (key) => {
-        onChange(key, nextValues[key]);
-      },
-    );
-  }
-
   return (
     <Card>
       <form onSubmit={handleSubmit} className="grid gap-5">
-        {/* Step 1-2: 画像アップロード + AI候補作成 */}
         <section className="grid gap-3 rounded-xl border border-night-gold/30 bg-night-warm/60 p-4">
           <header className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-bold text-cream-50">
-              <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-night-gold text-[10px] text-night-deep">
-                1
-              </span>
-              画像アップロード
+              手入力・編集用の画像
             </h3>
             <span className="text-[11px] text-cream-200/60">
               jpg / png / webp / 2MB以下
@@ -135,7 +111,7 @@ export function InventoryItemForm({
               disabled={!imageFile || isUploadingImage}
               onClick={onUploadImage}
             >
-              {isUploadingImage ? 'アップロード中…' : '画像をStorageへ保存'}
+              {isUploadingImage ? 'アップロード中…' : '画像を保存'}
             </Button>
             {imageFile ? (
               <span className="text-xs text-cream-200/60">
@@ -158,24 +134,8 @@ export function InventoryItemForm({
           ) : null}
         </section>
 
-        <AiRegistrationPanel
-          currentValues={values}
-          imageFile={imageFile}
-          imagePath={imagePath}
-          imageUrl={values.image_url}
-          inventoryItems={inventoryItems}
-          currentItemId={currentItemId}
-          referenceData={categoryReferenceData}
-          onEditSimilarItem={onEditSimilarItem}
-          onApplyCandidate={handleApplyAiCandidate}
-        />
-
-        {/* Step 5-6: フォーム入力 */}
         <section className="grid gap-4">
           <header className="flex items-center gap-2">
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-night-gold text-[10px] font-bold text-night-deep">
-              5
-            </span>
             <h3 className="text-sm font-bold text-cream-50">
               内容を確認・修正
             </h3>
@@ -312,6 +272,61 @@ export function InventoryItemForm({
             />
           </label>
 
+          <details className="rounded-xl border border-night-gold/25 bg-black/25 p-3">
+            <summary className="cursor-pointer text-sm font-bold text-cream-50">
+              酒棚サムネイル設定
+            </summary>
+            <div className="mt-3 grid gap-3">
+              {values.thumbnail_url ? (
+                <div className="flex items-end gap-3 rounded-xl bg-black/30 p-3 ring-1 ring-night-gold/25">
+                  <img
+                    className="max-h-28 w-fit rounded-lg object-contain"
+                    src={values.thumbnail_url}
+                    alt="サムネイルプレビュー"
+                    draggable={false}
+                  />
+                  <span className="text-[11px] text-cream-200/60">
+                    酒棚ではこの画像を優先表示します。
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs text-cream-200/60">
+                  サムネイルがない場合は image_url を使います。
+                </p>
+              )}
+              <label className="grid gap-1 text-sm font-semibold">
+                {fieldLabels.thumbnail_url}
+                <input
+                  className={inputClass}
+                  value={values.thumbnail_url}
+                  onChange={(event) =>
+                    onChange('thumbnail_url', event.target.value)
+                  }
+                />
+              </label>
+              <label className="grid gap-1 text-sm font-semibold">
+                {fieldLabels.thumbnail_prompt}
+                <textarea
+                  className={`${inputClass} min-h-20`}
+                  value={values.thumbnail_prompt}
+                  onChange={(event) =>
+                    onChange('thumbnail_prompt', event.target.value)
+                  }
+                />
+              </label>
+              <label className="grid gap-1 text-sm font-semibold">
+                {fieldLabels.thumbnail_provider}
+                <input
+                  className={inputClass}
+                  value={values.thumbnail_provider}
+                  onChange={(event) =>
+                    onChange('thumbnail_provider', event.target.value)
+                  }
+                />
+              </label>
+            </div>
+          </details>
+
           <label className="grid gap-1 text-sm font-semibold">
             memo
             <textarea
@@ -327,9 +342,6 @@ export function InventoryItemForm({
             キャンセル
           </Button>
           <Button type="submit" variant="accent" disabled={isSubmitting}>
-            <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/30 text-[10px]">
-              6
-            </span>
             {isSubmitting ? '保存中…' : submitLabel}
           </Button>
         </div>

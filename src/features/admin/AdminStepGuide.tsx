@@ -2,13 +2,9 @@ import { Card } from '../../components/ui/Card';
 import { MascotBubble } from '../../components/ui/MascotBubble';
 
 const STEPS = [
-  { n: 1, label: '画像アップロード' },
-  { n: 2, label: 'AI候補作成' },
-  { n: 3, label: '候補カード' },
-  { n: 4, label: 'フォームに反映' },
-  { n: 5, label: '確認・修正' },
-  { n: 6, label: '登録 / 更新' },
-  { n: 7, label: '在庫一覧で確認' },
+  { n: 1, label: '画像を選ぶ' },
+  { n: 2, label: '候補を確認' },
+  { n: 3, label: '登録する' },
 ];
 
 export function AdminStepGuide() {
@@ -16,9 +12,9 @@ export function AdminStepGuide() {
     <Card tone="cream" className="overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <MascotBubble size="md">
-          画像を選んで「AI候補作成」だ。候補は確認してから保存してくれ。
+          画像を選べば候補作成まで進むぞ。最後だけ、ちゃんと確認して登録してくれ。
         </MascotBubble>
-        <ol className="grid flex-1 grid-cols-2 gap-2 text-xs sm:grid-cols-4 lg:grid-cols-7">
+        <ol className="grid flex-1 grid-cols-1 gap-2 text-xs sm:grid-cols-3">
           {STEPS.map((step) => (
             <li
               key={step.n}

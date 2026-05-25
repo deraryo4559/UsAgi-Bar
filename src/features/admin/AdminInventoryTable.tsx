@@ -5,6 +5,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { RemainingMeter } from '../../components/ui/RemainingMeter';
 import type { InventoryItem } from '../../types/inventory';
 import { calculateRemainingMl } from '../inventory/api/inventoryItems';
+import { getInventoryDisplayImageUrl } from '../inventory/inventoryImages';
 
 const presetOptions = [
   { label: '100%', ratio: 1 },
@@ -53,6 +54,7 @@ export function AdminInventoryTable({
       <ul className="divide-y divide-night-gold/15">
         {items.map((item) => {
           const isBusy = busyItemId === item.id;
+          const displayImageUrl = getInventoryDisplayImageUrl(item);
 
           return (
             <li
@@ -60,9 +62,9 @@ export function AdminInventoryTable({
               className="grid gap-3 p-4 sm:grid-cols-[64px_1fr_auto] sm:items-center"
             >
               <div className="hidden h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-black/35 ring-1 ring-night-gold/25 sm:flex">
-                {item.image_url ? (
+                {displayImageUrl ? (
                   <img
-                    src={item.image_url}
+                    src={displayImageUrl}
                     alt=""
                     className="h-full w-full object-contain"
                     draggable={false}

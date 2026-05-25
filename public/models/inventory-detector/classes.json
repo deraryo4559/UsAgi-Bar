@@ -1,0 +1,39 @@
+{
+  "schema_version": "inventory_detector_classes.v1",
+  "model_family": "coco",
+  "class_count": 80,
+  "target_class_names": [
+    "bottle",
+    "cup",
+    "wine glass",
+    "can",
+    "carton",
+    "plastic bottle",
+    "drink pack"
+  ],
+  "classes": [
+    {
+      "id": 39,
+      "name": "bottle",
+      "kind": "bottle",
+      "target": true
+    },
+    {
+      "id": 40,
+      "name": "wine glass",
+      "kind": "wine_glass",
+      "target": true
+    },
+    {
+      "id": 41,
+      "name": "cup",
+      "kind": "cup",
+      "target": true
+    }
+  ],
+  "notes": [
+    "COCO系YOLOでは bottle / wine glass / cup は一般的に含まれます。",
+    "can / carton / plastic bottle / drink pack はCOCO標準に存在しないことが多いため、該当クラスを持つカスタムモデルを使う場合だけclassesへ追加してください。",
+    "YOLOは商品名判定ではなく、Gemini Visionへ渡すcrop領域を作るために使います。"
+  ]
+}

@@ -1,2 +1,8 @@
 [functions.analyze-inventory-image]
 verify_jwt = true
+
+[functions.detect-inventory-items]
+verify_jwt = true
+
+[functions.generate-inventory-thumbnail]
+verify_jwt = true

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { BottlePlaceholder } from '../../components/ui/BottlePlaceholder';
 import shelfUrl from '../../img/shelf-transparent.png';
-import tanaUsagiUrl from '../../img/tanaUsagi.png';
 import type { InventoryItem } from '../../types/inventory';
+import { getInventoryDisplayImageUrl } from '../inventory/inventoryImages';
 import {
   DESKTOP_ITEMS_PER_ROW,
   getItemXPositions,
@@ -100,6 +100,7 @@ function ShelfItem({
   layout: ShelfRowLayout;
 }) {
   const percent = remainingPercent(item);
+  const displayImageUrl = getInventoryDisplayImageUrl(item);
   const size = getShelfItemSize(item);
   const rowBandHeight = layout.labelY - layout.topY + SHELF_LABEL_BAND_HEIGHT;
   const rowHeight = getShelfRowHeight(layout);
@@ -132,9 +133,9 @@ function ShelfItem({
             className="pointer-events-none absolute bottom-[-2px] left-1/2 h-[6px] w-[76%] -translate-x-1/2 rounded-full bg-black/55 blur-[3px]"
           />
 
-          {item.image_url ? (
+          {displayImageUrl ? (
             <img
-              src={item.image_url}
+              src={displayImageUrl}
               alt={item.name}
               className="shelf-product-image relative z-10 h-full w-full select-none object-contain object-bottom drop-shadow-[0_8px_8px_rgba(0,0,0,0.62)] transition-transform duration-150 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5"
               draggable={false}
@@ -316,11 +317,6 @@ export function ShelfGrid({ items }: ShelfGridProps) {
             className="pointer-events-none absolute inset-x-[13%] top-[4.5%] z-[1] h-[16%] rounded-[50%] bg-night-glow/20 blur-2xl"
           />
 
-          <div className="pointer-events-none absolute left-[15%] top-[3.9%] z-20 rounded-full border border-night-gold/45 bg-black/45 px-3 py-1 text-[11px] font-extrabold text-cream-50 shadow-neon backdrop-blur-[2px] sm:text-xs">
-            <span className="text-night-glow">ウサギ</span>
-            <span className="ml-0.5 text-night-neon">Bar</span>
-          </div>
-
           <div className="absolute inset-0 hidden sm:block">
             {SHELF_ROWS.map((layout, rowIndex) => (
               <ShelfRow
@@ -345,13 +341,6 @@ export function ShelfGrid({ items }: ShelfGridProps) {
 
           <ShelfDebugOverlay />
         </div>
-
-        <img
-          src={tanaUsagiUrl}
-          alt="うさぎ店主"
-          className="pointer-events-none absolute right-[4%] top-[8.2%] z-30 w-[17%] max-w-[104px] select-none object-contain drop-shadow-[0_10px_12px_rgba(0,0,0,0.62)] sm:right-[5%] sm:w-[14%]"
-          draggable={false}
-        />
       </div>
     </section>
   );

@@ -27,6 +27,7 @@ type AiInventoryCandidate = {
   volume_ml: number | null;
   remaining_ml: number | null;
   memo: string | null;
+  thumbnail_prompt: string | null;
   confidence: number;
   needs_review: boolean;
   needs_review_reasons: string[];
@@ -54,6 +55,13 @@ type AiInventoryImageAnalysisResult = {
   };
   image_assessment: ImageAssessment;
   candidates: AiInventoryCandidate[];
+  usage?: GeminiUsageMetadata | null;
+};
+
+type GeminiUsageMetadata = {
+  promptTokenCount: number | null;
+  candidatesTokenCount: number | null;
+  totalTokenCount: number | null;
 };
 
 class FunctionError extends Error {
@@ -158,6 +166,7 @@ function validateCandidate(value: unknown, index: number): AiInventoryCandidate 
     volume_ml: numberOrNull(value.volume_ml),
     remaining_ml: numberOrNull(value.remaining_ml),
     memo: normalizeOptionalString(value.memo),
+    thumbnail_prompt: normalizeOptionalString(value.thumbnail_prompt),
     confidence: confidence(value.confidence),
     needs_review:
       typeof value.needs_review === 'boolean' ? value.needs_review : true,
@@ -234,6 +243,8 @@ function buildPrompt(imagePath: string) {
 - 画像から度数が読めない場合は推測で埋めず、alcohol_percentage は null にしてください。
 - 容量が読める場合は volume_ml に入れてください。
 - remaining_ml は画像から現在残量が明確に分かる場合以外は null にしてください。
+- thumbnail_prompt には、酒棚UIで見やすいイラスト風サムネイルをimg2img生成するための英語promptを入れてください。
+- thumbnail_prompt は実在ブランドロゴや読める文字を正確に再現させないでください。必ず "clean cute 2D/3D hybrid illustrated thumbnail", "full container visible", "centered object", "large in frame", "crisp silhouette", "plain pure white or transparent background", "no readable text", "no exact brand logo" を含めてください。
 - confidenceが高くても needs_review は true にして構いません。AI候補は直接保存されず、管理者確認が必須です。
 - 複数商品が写っている可能性がある場合は image_assessment.multiple_items_likely を true にしてください。
 
@@ -292,6 +303,7 @@ const responseSchema = {
           'volume_ml',
           'remaining_ml',
           'memo',
+          'thumbnail_prompt',
           'confidence',
           'needs_review',
           'needs_review_reasons',
@@ -310,6 +322,7 @@ const responseSchema = {
           volume_ml: { type: ['number', 'null'] },
           remaining_ml: { type: ['number', 'null'] },
           memo: { type: ['string', 'null'] },
+          thumbnail_prompt: { type: ['string', 'null'] },
           confidence: { type: 'number', minimum: 0, maximum: 1 },
           needs_review: { type: 'boolean' },
           needs_review_reasons: {
@@ -389,6 +402,23 @@ function extractGeminiText(value: unknown) {
   }
 
   return null;
+}
+
+function extractUsageMetadata(value: unknown): GeminiUsageMetadata | null {
+  if (!isRecord(value) || !isRecord(value.usageMetadata)) {
+    return null;
+  }
+
+  function tokenCount(key: string) {
+    const count = value.usageMetadata[key];
+    return typeof count === 'number' && Number.isFinite(count) ? count : null;
+  }
+
+  return {
+    promptTokenCount: tokenCount('promptTokenCount'),
+    candidatesTokenCount: tokenCount('candidatesTokenCount'),
+    totalTokenCount: tokenCount('totalTokenCount'),
+  };
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {
@@ -486,9 +516,10 @@ async function callGemini({
 
   if (!response.ok) {
     const detail = await response.text();
+    const status = response.status === 429 ? 429 : 502;
     throw new FunctionError(
       `Gemini API呼び出しに失敗しました。status=${response.status} ${detail.slice(0, 300)}`,
-      502,
+      status,
     );
   }
 
@@ -500,7 +531,10 @@ async function callGemini({
   }
 
   try {
-    return JSON.parse(text) as unknown;
+    return {
+      result: JSON.parse(text) as unknown,
+      usage: extractUsageMetadata(payload),
+    };
   } catch {
     throw new FunctionError('Gemini応答JSONの解析に失敗しました。', 502);
   }
@@ -526,9 +560,12 @@ Deno.serve(async (req) => {
       mimeType: image.mimeType,
       base64: image.base64,
     });
-    const result = validateAnalysisResult(geminiResult, path);
+    const result = validateAnalysisResult(geminiResult.result, path);
 
-    return jsonResponse(result);
+    return jsonResponse({
+      ...result,
+      usage: geminiResult.usage,
+    });
   } catch (error) {
     if (error instanceof AdminAuthError || error instanceof FunctionError) {
       return jsonResponse({ error: error.message }, error.status);

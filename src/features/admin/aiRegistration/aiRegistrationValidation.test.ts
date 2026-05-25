@@ -3,6 +3,9 @@ import {
   getCandidateReviewReasons,
   validateAiInventoryAnalysisResult,
   validateAnalyzeInventoryImageInput,
+  validateGenerateInventoryThumbnailInput,
+  validateGenerateInventoryThumbnailResult,
+  validateInventoryObjectDetectionResult,
 } from './aiRegistrationValidation';
 import type { AiInventoryAnalysisResult } from './types';
 
@@ -30,6 +33,7 @@ const validResult: AiInventoryAnalysisResult = {
       volume_ml: 750,
       remaining_ml: 750,
       memo: '画像解析によるAI候補。保存前に確認してください。',
+      thumbnail_prompt: null,
       confidence: 0.86,
       needs_review: true,
       needs_review_reasons: ['容量表記が不確実'],
@@ -45,7 +49,27 @@ const validResult: AiInventoryAnalysisResult = {
 
 describe('AI registration validation', () => {
   it('validates Gemini Vision JSON schema', () => {
-    expect(validateAiInventoryAnalysisResult(validResult)).toEqual(validResult);
+    expect(validateAiInventoryAnalysisResult(validResult)).toEqual({
+      ...validResult,
+      usage: null,
+    });
+  });
+
+  it('keeps safe Gemini usage metadata', () => {
+    const result = validateAiInventoryAnalysisResult({
+      ...validResult,
+      usage: {
+        promptTokenCount: 1200,
+        candidatesTokenCount: 180,
+        totalTokenCount: 1380,
+      },
+    });
+
+    expect(result.usage).toEqual({
+      promptTokenCount: 1200,
+      candidatesTokenCount: 180,
+      totalTokenCount: 1380,
+    });
   });
 
   it('validates Gemini Vision JSON schema with image assessment', () => {
@@ -154,5 +178,146 @@ describe('AI registration validation', () => {
         path: '../secret.jpg',
       }),
     ).toThrow('Storage path');
+  });
+
+  it('validates inventory object detection results', () => {
+    const result = validateInventoryObjectDetectionResult({
+      schema_version: 'inventory_object_detection.v1',
+      source: {
+        bucket: 'inventory-images',
+        path: 'inventory/2026-05-24/group.jpg',
+      },
+      detections: [
+        {
+          detection_id: 'det-1',
+          label: 'ジンのボトル',
+          item_kind: 'alcohol',
+          box_2d: {
+            ymin: 120,
+            xmin: 310,
+            ymax: 780,
+            xmax: 520,
+          },
+          confidence: 0.82,
+          needs_review: true,
+          notes: '正面ラベルあり',
+        },
+      ],
+    });
+
+    expect(result.detections[0]).toMatchObject({
+      detection_id: 'det-1',
+      item_kind: 'alcohol',
+      box_2d: {
+        ymin: 120,
+        xmin: 310,
+        ymax: 780,
+        xmax: 520,
+      },
+    });
+  });
+
+  it('keeps detection fallback warnings', () => {
+    const result = validateInventoryObjectDetectionResult({
+      schema_version: 'inventory_object_detection.v1',
+      source: {
+        bucket: 'inventory-images',
+        path: 'inventory/2026-05-24/group.jpg',
+      },
+      detections: [],
+      warnings: ['画像全体解析へフォールバックします。'],
+    });
+
+    expect(result.detections).toEqual([]);
+    expect(result.warnings).toEqual(['画像全体解析へフォールバックします。']);
+  });
+
+  it('rejects invalid detection boxes', () => {
+    expect(() =>
+      validateInventoryObjectDetectionResult({
+        schema_version: 'inventory_object_detection.v1',
+        source: {
+          bucket: 'inventory-images',
+          path: 'inventory/2026-05-24/group.jpg',
+        },
+        detections: [
+          {
+            detection_id: 'det-1',
+            label: '不正な枠',
+            item_kind: 'alcohol',
+            box_2d: {
+              ymin: 900,
+              xmin: 310,
+              ymax: 120,
+              xmax: 520,
+            },
+            confidence: 0.82,
+            needs_review: true,
+            notes: null,
+          },
+        ],
+      }),
+    ).toThrow('xmin < xmax');
+  });
+
+  it('validates thumbnail generation input', () => {
+    expect(
+      validateGenerateInventoryThumbnailInput({
+        source: {
+          bucket: 'inventory-images',
+          path: 'inventory/crops/2026-05-25/candidate.png',
+        },
+        prompt: 'A clean illustrated thumbnail, no readable text.',
+        candidateId: 'candidate-1',
+      }),
+    ).toEqual({
+      source: {
+        bucket: 'inventory-images',
+        path: 'inventory/crops/2026-05-25/candidate.png',
+      },
+      prompt: 'A clean illustrated thumbnail, no readable text.',
+      candidateId: 'candidate-1',
+    });
+
+    expect(() =>
+      validateGenerateInventoryThumbnailInput({
+        source: {
+          bucket: 'inventory-images',
+          path: 'inventory/crops/2026-05-25/candidate.png',
+        },
+        prompt: '',
+      }),
+    ).toThrow('prompt');
+  });
+
+  it('validates thumbnail generation response', () => {
+    expect(
+      validateGenerateInventoryThumbnailResult({
+        thumbnail: {
+          url: 'https://example.com/thumb.png',
+          path: 'thumbnails/2026-05-25/thumb.png',
+          provider: 'cloudflare-workers-ai',
+          prompt: 'A clean illustrated thumbnail.',
+        },
+      }),
+    ).toEqual({
+      thumbnail: {
+        url: 'https://example.com/thumb.png',
+        path: 'thumbnails/2026-05-25/thumb.png',
+        provider: 'cloudflare-workers-ai',
+        prompt: 'A clean illustrated thumbnail.',
+      },
+    });
+
+    expect(() =>
+      validateGenerateInventoryThumbnailResult({
+        thumbnail: {
+          url: 'https://example.com/thumb.png',
+          path: 'thumbnails/2026-05-25/thumb.png',
+          provider: 'other-provider',
+          prompt: 'A clean illustrated thumbnail.',
+        },
+      }),
+    ).toThrow('thumbnail');
   });
 });

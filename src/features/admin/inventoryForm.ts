@@ -13,6 +13,10 @@ export type InventoryItemFormValues = {
   volume_ml: string;
   remaining_ml: string;
   image_url: string;
+  thumbnail_url: string;
+  thumbnail_prompt: string;
+  thumbnail_provider: string;
+  thumbnail_generated_at: string;
   memo: string;
   display_order: string;
 };
@@ -26,6 +30,10 @@ export const emptyInventoryItemFormValues: InventoryItemFormValues = {
   volume_ml: '',
   remaining_ml: '',
   image_url: '',
+  thumbnail_url: '',
+  thumbnail_prompt: '',
+  thumbnail_provider: '',
+  thumbnail_generated_at: '',
   memo: '',
   display_order: '',
 };
@@ -67,6 +75,10 @@ export function inventoryItemToFormValues(
     volume_ml: numberToFormValue(item.volume_ml),
     remaining_ml: numberToFormValue(item.remaining_ml),
     image_url: item.image_url ?? '',
+    thumbnail_url: item.thumbnail_url ?? '',
+    thumbnail_prompt: item.thumbnail_prompt ?? '',
+    thumbnail_provider: item.thumbnail_provider ?? '',
+    thumbnail_generated_at: item.thumbnail_generated_at ?? '',
     memo: item.memo ?? '',
     display_order: numberToFormValue(item.display_order),
   };
@@ -84,6 +96,10 @@ export function formValuesToInventoryItemInput(
     volume_ml: nullableNumber(values.volume_ml),
     remaining_ml: nullableNumber(values.remaining_ml),
     image_url: nullableText(values.image_url),
+    thumbnail_url: nullableText(values.thumbnail_url),
+    thumbnail_prompt: nullableText(values.thumbnail_prompt),
+    thumbnail_provider: nullableText(values.thumbnail_provider),
+    thumbnail_generated_at: nullableText(values.thumbnail_generated_at),
     memo: nullableText(values.memo),
     display_order: nullableInteger(values.display_order),
   };

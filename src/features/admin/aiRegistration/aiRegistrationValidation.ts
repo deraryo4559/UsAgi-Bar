@@ -3,14 +3,24 @@ import { INVENTORY_IMAGES_BUCKET } from '../../../lib/supabase/config';
 import type { InventoryItemType } from '../../../types/inventory';
 import {
   AI_INVENTORY_IMAGE_SCHEMA_VERSION,
+  INVENTORY_OBJECT_DETECTION_SCHEMA_VERSION,
   type AiImageAssessment,
   type AiInventoryAnalysisResult,
   type AiInventoryCandidate,
+  type AiInventoryUsageMetadata,
   type AiInventorySource,
   type AnalyzeInventoryImageInput,
+  type DetectInventoryItemsInput,
+  type DetectionItemKind,
+  type GenerateInventoryThumbnailInput,
+  type GenerateInventoryThumbnailResult,
+  type InventoryDetection,
+  type InventoryObjectDetectionResult,
 } from './types';
+import { normalizeBox } from './boundingBoxes';
 
 export const MAX_STORAGE_PATH_LENGTH = 512;
+export const MAX_THUMBNAIL_PROMPT_LENGTH = 1200;
 
 export class AiRegistrationValidationError extends Error {
   constructor(message: string) {
@@ -89,6 +99,25 @@ function validateImageAssessment(value: unknown): AiImageAssessment {
   };
 }
 
+function validateUsageMetadata(value: unknown): AiInventoryUsageMetadata | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const usage = value;
+
+  function tokenCount(key: string) {
+    const count = usage[key];
+    return typeof count === 'number' && Number.isFinite(count) ? count : null;
+  }
+
+  return {
+    promptTokenCount: tokenCount('promptTokenCount'),
+    candidatesTokenCount: tokenCount('candidatesTokenCount'),
+    totalTokenCount: tokenCount('totalTokenCount'),
+  };
+}
+
 export function validateAnalyzeInventoryImageInput(
   input: AnalyzeInventoryImageInput,
 ): AnalyzeInventoryImageInput {
@@ -121,6 +150,42 @@ export function validateAnalyzeInventoryImageInput(
   }
 
   return { bucket, path };
+}
+
+export function validateDetectInventoryItemsInput(
+  input: DetectInventoryItemsInput,
+): DetectInventoryItemsInput {
+  return validateAnalyzeInventoryImageInput(input);
+}
+
+export function validateGenerateInventoryThumbnailInput(
+  input: GenerateInventoryThumbnailInput,
+): GenerateInventoryThumbnailInput {
+  const source = validateAnalyzeInventoryImageInput(input.source);
+  const prompt = input.prompt.trim();
+
+  if (!prompt) {
+    throw new AiRegistrationValidationError(
+      'サムネイル生成promptを入力してください。',
+    );
+  }
+
+  if (prompt.length > MAX_THUMBNAIL_PROMPT_LENGTH) {
+    throw new AiRegistrationValidationError(
+      `サムネイル生成promptは${MAX_THUMBNAIL_PROMPT_LENGTH}文字以内にしてください。`,
+    );
+  }
+
+  const candidateId =
+    typeof input.candidateId === 'string' && input.candidateId.trim()
+      ? input.candidateId.trim()
+      : null;
+
+  return {
+    source,
+    prompt,
+    candidateId,
+  };
 }
 
 function validateCandidate(value: unknown, index: number): AiInventoryCandidate {
@@ -170,6 +235,10 @@ function validateCandidate(value: unknown, index: number): AiInventoryCandidate 
     volume_ml: value.volume_ml,
     remaining_ml: value.remaining_ml,
     memo: value.memo,
+    thumbnail_prompt:
+      typeof value.thumbnail_prompt === 'string' && value.thumbnail_prompt.trim()
+        ? value.thumbnail_prompt.trim()
+        : null,
     confidence: validateNumberRange(value.confidence, 0),
     needs_review:
       typeof value.needs_review === 'boolean' ? value.needs_review : true,
@@ -179,6 +248,41 @@ function validateCandidate(value: unknown, index: number): AiInventoryCandidate 
       visual_cues: stringArray(evidence.visual_cues),
       inferred_fields: stringArray(evidence.inferred_fields),
       uncertainty_notes: stringArray(evidence.uncertainty_notes),
+    },
+  };
+}
+
+export function validateGenerateInventoryThumbnailResult(
+  value: unknown,
+): GenerateInventoryThumbnailResult {
+  if (!isRecord(value) || !isRecord(value.thumbnail)) {
+    throw new AiRegistrationValidationError(
+      'サムネイル生成応答の形式が正しくありません。',
+    );
+  }
+
+  const thumbnail = value.thumbnail;
+
+  if (
+    typeof thumbnail.url !== 'string' ||
+    !thumbnail.url.trim() ||
+    typeof thumbnail.path !== 'string' ||
+    !thumbnail.path.trim() ||
+    thumbnail.provider !== 'cloudflare-workers-ai' ||
+    typeof thumbnail.prompt !== 'string' ||
+    !thumbnail.prompt.trim()
+  ) {
+    throw new AiRegistrationValidationError(
+      'サムネイル生成応答のthumbnail形式が正しくありません。',
+    );
+  }
+
+  return {
+    thumbnail: {
+      url: thumbnail.url.trim(),
+      path: thumbnail.path.trim(),
+      provider: 'cloudflare-workers-ai',
+      prompt: thumbnail.prompt.trim(),
     },
   };
 }
@@ -218,6 +322,100 @@ export function validateAiInventoryAnalysisResult(
     source,
     image_assessment: validateImageAssessment(value.image_assessment),
     candidates,
+    usage: validateUsageMetadata(value.usage),
+  };
+}
+
+const detectionItemKinds: DetectionItemKind[] = [
+  'alcohol',
+  'drink',
+  'mixer',
+  'unknown',
+];
+
+function validateDetection(value: unknown, index: number): InventoryDetection {
+  if (!isRecord(value)) {
+    throw new AiRegistrationValidationError(
+      `検出候補${index + 1}件目の形式が正しくありません。`,
+    );
+  }
+
+  if (
+    typeof value.item_kind !== 'string' ||
+    !detectionItemKinds.includes(value.item_kind as DetectionItemKind)
+  ) {
+    throw new AiRegistrationValidationError(
+      `検出候補${index + 1}件目のitem_kindが正しくありません。`,
+    );
+  }
+
+  if (!isRecord(value.box_2d)) {
+    throw new AiRegistrationValidationError(
+      `検出候補${index + 1}件目のbox_2dが正しくありません。`,
+    );
+  }
+
+  return {
+    detection_id:
+      typeof value.detection_id === 'string' && value.detection_id.trim()
+        ? value.detection_id
+        : `det-${index + 1}`,
+    label:
+      typeof value.label === 'string' && value.label.trim()
+        ? value.label
+        : `検出候補 ${index + 1}`,
+    item_kind: value.item_kind as DetectionItemKind,
+    box_2d: normalizeBox({
+      ymin: Number(value.box_2d.ymin),
+      xmin: Number(value.box_2d.xmin),
+      ymax: Number(value.box_2d.ymax),
+      xmax: Number(value.box_2d.xmax),
+    }),
+    confidence: validateNumberRange(value.confidence, 0),
+    needs_review:
+      typeof value.needs_review === 'boolean' ? value.needs_review : true,
+    notes: typeof value.notes === 'string' ? value.notes : null,
+  };
+}
+
+export function validateInventoryObjectDetectionResult(
+  value: unknown,
+): InventoryObjectDetectionResult {
+  if (!isRecord(value)) {
+    throw new AiRegistrationValidationError(
+      '検出応答がJSONオブジェクトではありません。',
+    );
+  }
+
+  if (value.schema_version !== INVENTORY_OBJECT_DETECTION_SCHEMA_VERSION) {
+    throw new AiRegistrationValidationError(
+      '検出応答のschema_versionが正しくありません。',
+    );
+  }
+
+  if (!isRecord(value.source)) {
+    throw new AiRegistrationValidationError('検出応答のsource形式が正しくありません。');
+  }
+
+  const source = {
+    bucket:
+      typeof value.source.bucket === 'string' ? value.source.bucket : '',
+    path: typeof value.source.path === 'string' ? value.source.path : '',
+  };
+
+  validateDetectInventoryItemsInput(source);
+
+  if (!Array.isArray(value.detections)) {
+    throw new AiRegistrationValidationError(
+      '検出応答のdetectionsが配列ではありません。',
+    );
+  }
+
+  return {
+    schema_version: INVENTORY_OBJECT_DETECTION_SCHEMA_VERSION,
+    source,
+    detections: value.detections.map(validateDetection),
+    warnings: stringArray(value.warnings),
   };
 }
 

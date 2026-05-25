@@ -29,6 +29,11 @@ export type UploadedInventoryImage = {
   path: string;
 };
 
+type UploadInventoryImageOptions = {
+  pathPrefix?: string;
+  fileNameBase?: string;
+};
+
 export function validateInventoryImageFile(file: File) {
   if (
     !SUPPORTED_INVENTORY_IMAGE_TYPES.includes(
@@ -71,6 +76,7 @@ export function extractInventoryImagePathFromPublicUrl(publicUrl: string) {
 
 export async function uploadInventoryImage(
   file: File,
+  options: UploadInventoryImageOptions = {},
 ): Promise<UploadedInventoryImage> {
   ensureSupabaseConfig();
   validateInventoryImageFile(file);
@@ -80,7 +86,25 @@ export async function uploadInventoryImage(
     typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const filePath = `inventory/${new Date().toISOString().slice(0, 10)}/${randomId}.${extension}`;
+  const safeFileNameBase = options.fileNameBase
+    ?.replace(/[^a-zA-Z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  const pathPrefix =
+    options.pathPrefix?.trim() ||
+    `inventory/${new Date().toISOString().slice(0, 10)}`;
+
+  if (
+    !pathPrefix.startsWith('inventory/') ||
+    pathPrefix.includes('..') ||
+    pathPrefix.includes('\\') ||
+    pathPrefix.endsWith('/')
+  ) {
+    throw new Error('画像アップロード先pathの形式が正しくありません。');
+  }
+
+  const fileName = safeFileNameBase ? `${safeFileNameBase}-${randomId}` : randomId;
+  const filePath = `${pathPrefix}/${fileName}.${extension}`;
 
   const { error } = await supabase.storage
     .from(INVENTORY_IMAGES_BUCKET)
